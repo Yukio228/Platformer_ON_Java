@@ -1,0 +1,10 @@
+.idea/
+out/
+PlatformerTutorial/.idea/
+PlatformerTutorial/out/
+.DS_Store
+*.class
+*.tmp
+*.bak
+*.swp
+local.properties
