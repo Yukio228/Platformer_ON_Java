@@ -12,7 +12,8 @@ public class GameWindow {
 
 	public enum ScreenMode {
 		WINDOWED("WINDOWED"),
-		FULLSCREEN("FULLSCREEN");
+		FULLSCREEN("FULLSCREEN"),
+		BORDERLESS("BORDERLESS");
 
 		private final String label;
 
@@ -109,6 +110,7 @@ public class GameWindow {
 		switch (screenMode) {
 		case WINDOWED -> applyWindowedMode();
 		case FULLSCREEN -> applyFullscreenMode();
+		case BORDERLESS -> applyBorderlessMode();
 		}
 
 		gamePanel.requestFocusInWindow();
@@ -131,6 +133,15 @@ public class GameWindow {
 		gamePanel.setRenderSize(bounds.width, bounds.height);
 		jframe.setVisible(true);
 		graphicsDevice.setFullScreenWindow(jframe);
+	}
+
+	private void applyBorderlessMode() {
+		Rectangle bounds = graphicsDevice.getDefaultConfiguration().getBounds();
+		jframe.setUndecorated(true);
+		jframe.setResizable(false);
+		gamePanel.setRenderSize(bounds.width, bounds.height);
+		jframe.setBounds(bounds);
+		jframe.setVisible(true);
 	}
 
 }

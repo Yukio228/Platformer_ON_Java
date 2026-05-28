@@ -11,7 +11,7 @@ public class PirateMob extends Enemy {
 	public PirateMob(float x, float y, int enemyType) {
 		super(x, y, PIRATE_MOB_WIDTH, PIRATE_MOB_HEIGHT, enemyType);
 		initHitbox(getHitboxWidth(enemyType), getHitboxHeight(enemyType));
-		initAttackBox(getAttackBoxWidth(enemyType), 28, 30);
+		initAttackBox(getAttackBoxWidth(enemyType), getAttackBoxHeight(enemyType), getAttackBoxOffsetX(enemyType));
 		setAiProfile(getSightTiles(enemyType), getHearingTiles(enemyType), getChaseSpeed(enemyType), 170, 14);
 		walkSpeed = getWalkSpeed(enemyType);
 		attackDistance = getAttackDistance(enemyType);
@@ -41,37 +41,51 @@ public class PirateMob extends Enemy {
 			break;
 		case RUNNING:
 			updateAiState(lvlData, playing);
-			if (aiState == AI_CHASE && isPlayerCloseForAttack(playing.getPlayer()))
+			if (aiState == AI_CHASE && canStartAttack(playing.getPlayer()))
 				newState(ATTACK);
 			else
 				updateAiMovement(lvlData, playing);
 			break;
 		case ATTACK:
+			if (aniIndex <= 1) {
+				turnTowardsPlayer(playing.getPlayer());
+				updateAttackBoxFlip();
+			}
 			if (aniIndex == 0)
 				attackChecked = false;
-			if (aniIndex == 3 && !attackChecked)
+			if (aniIndex == 3 && !attackChecked) {
+				updateAttackBoxFlip();
 				checkPlayerHit(attackBox, playing.getPlayer());
+			}
 			break;
 		case HIT:
-			if (aniIndex <= GetSpriteAmount(enemyType, state) - 2)
-				pushBack(pushBackDir, lvlData, 1.45f);
-			updatePushBackDrawOffset();
+			updateHitReaction(lvlData, 1.45f);
 			break;
 		}
 	}
 
+	private boolean canStartAttack(Player player) {
+		turnTowardsPlayer(player);
+		updateAttackBoxFlip();
+		return isPlayerCloseForAttack(player) && attackBox.intersects(player.getHitbox());
+	}
+
 	@Override
 	public int flipX() {
-		if (walkDir == LEFT)
-			return width;
-		return 0;
+		if (usesRightFacingAtlas())
+			return walkDir == LEFT ? width : 0;
+		return super.flipX();
 	}
 
 	@Override
 	public int flipW() {
-		if (walkDir == LEFT)
-			return -1;
-		return 1;
+		if (usesRightFacingAtlas())
+			return walkDir == LEFT ? -1 : 1;
+		return super.flipW();
+	}
+
+	private boolean usesRightFacingAtlas() {
+		return enemyType == BALD_PIRATE || enemyType == PIRATE_CAPTAIN;
 	}
 
 	public int getDrawOffsetY() {
@@ -99,7 +113,23 @@ public class PirateMob extends Enemy {
 	}
 
 	private static int getAttackBoxWidth(int enemyType) {
-		return enemyType == PIRATE_CAPTAIN ? 42 : 36;
+		return switch (enemyType) {
+		case CUCUMBER -> 20;
+		case PIRATE_CAPTAIN -> 42;
+		default -> 36;
+		};
+	}
+
+	private static int getAttackBoxHeight(int enemyType) {
+		return enemyType == CUCUMBER ? 24 : 28;
+	}
+
+	private static int getAttackBoxOffsetX(int enemyType) {
+		return switch (enemyType) {
+		case CUCUMBER -> 18;
+		case PIRATE_CAPTAIN -> 34;
+		default -> 30;
+		};
 	}
 
 	private static float getSightTiles(int enemyType) {
@@ -119,6 +149,6 @@ public class PirateMob extends Enemy {
 	}
 
 	private static float getAttackDistance(int enemyType) {
-		return (enemyType == PIRATE_CAPTAIN ? 1.45f : 1.1f) * main.Game.TILES_SIZE;
+		return (enemyType == CUCUMBER ? 0.75f : enemyType == PIRATE_CAPTAIN ? 1.45f : 1.1f) * main.Game.TILES_SIZE;
 	}
 }

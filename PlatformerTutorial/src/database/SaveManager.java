@@ -58,7 +58,7 @@ public class SaveManager {
 	}
 
 	public void savePlayerSkin(PlayerSkin playerSkin) {
-		this.playerSkin = playerSkin == null ? PlayerSkin.DEFAULT : playerSkin;
+		this.playerSkin = playerSkin == null || !playerSkin.isPlayable() ? PlayerSkin.DEFAULT : playerSkin;
 		save();
 	}
 
@@ -111,7 +111,8 @@ public class SaveManager {
 
 	private PlayerSkin parsePlayerSkin(String value) {
 		try {
-			return value == null ? PlayerSkin.DEFAULT : PlayerSkin.valueOf(value);
+			PlayerSkin parsedSkin = value == null ? PlayerSkin.DEFAULT : PlayerSkin.valueOf(value);
+			return parsedSkin.isPlayable() ? parsedSkin : PlayerSkin.DEFAULT;
 		} catch (IllegalArgumentException e) {
 			return PlayerSkin.DEFAULT;
 		}

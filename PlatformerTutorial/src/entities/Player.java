@@ -247,7 +247,7 @@ public class Player extends Entity {
 
 	private void updateAnimationTick() {
 		aniTick++;
-		if (aniTick >= ANI_SPEED) {
+		if (aniTick >= getAnimationSpeed()) {
 			aniTick = 0;
 			aniIndex++;
 			if (aniIndex >= GetSpriteAmount(state)) {
@@ -262,6 +262,21 @@ public class Player extends Entity {
 				}
 			}
 		}
+	}
+
+	private int getAnimationSpeed() {
+		if (skin == PlayerSkin.DEFAULT)
+			return ANI_SPEED;
+
+		return switch (state) {
+		case IDLE -> 12;
+		case RUNNING -> 9;
+		case JUMP, FALLING -> 14;
+		case ATTACK -> 10;
+		case HIT -> 10;
+		case DEAD -> 16;
+		default -> ANI_SPEED;
+		};
 	}
 
 	private void setAnimation() {

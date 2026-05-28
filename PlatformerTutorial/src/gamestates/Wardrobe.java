@@ -14,7 +14,7 @@ import utilz.LoadSave;
 
 public class Wardrobe extends State implements Statemethods {
 
-	private final PlayerSkin[] skins = PlayerSkin.values();
+	private final PlayerSkin[] skins = PlayerSkin.getWardrobeSkins();
 	private BufferedImage backgroundImg;
 	private BufferedImage[][] previewFrames;
 	private Rectangle[] skinCards;

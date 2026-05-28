@@ -131,7 +131,6 @@ public class ObjectManager {
 		inventoryItemImgs[PlayerInventory.GOLD_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_GOLD_COIN);
 		inventoryItemImgs[PlayerInventory.SILVER_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_SILVER_COIN);
 		inventoryItemImgs[PlayerInventory.KEY] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_KEY);
-		inventoryItemImgs[PlayerInventory.MAP] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_MAP);
 
 		BufferedImage containerSprite = LoadSave.GetSpriteAtlas(LoadSave.CONTAINER_ATLAS);
 		containerImgs = new BufferedImage[2][8];

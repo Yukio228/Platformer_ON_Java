@@ -74,7 +74,7 @@ public class EnemyManager {
 			if (p.isActive()) {
 				BufferedImage[][] atlas = getPirateMobAtlas(p.enemyType);
 				g.drawImage(atlas[p.getState()][p.getAniIndex()], (int) p.getHitbox().x - xLvlOffset - PIRATE_MOB_DRAWOFFSET_X + p.flipX(),
-						(int) p.getHitbox().y - p.getDrawOffsetY() + (int) p.getPushDrawOffset(), PIRATE_MOB_WIDTH * p.flipW(), PIRATE_MOB_HEIGHT, null);
+						(int) p.getHitbox().y - p.getDrawOffsetY(), PIRATE_MOB_WIDTH * p.flipW(), PIRATE_MOB_HEIGHT, null);
 //				p.drawHitbox(g, xLvlOffset);
 //				p.drawAttackBox(g, xLvlOffset);
 			}
@@ -92,14 +92,14 @@ public class EnemyManager {
 		for (KingPigBoss b : currentLevel.getBosses())
 			if (b.isActive()) {
 				g.drawImage(bossArr[b.getState()][b.getAniIndex()], (int) b.getHitbox().x - xLvlOffset - BOSS_DRAWOFFSET_X + b.flipX(),
-						(int) b.getHitbox().y - BOSS_DRAWOFFSET_Y + (int) b.getPushDrawOffset(), BOSS_WIDTH * b.flipW(), BOSS_HEIGHT, null);
+						(int) b.getHitbox().y - BOSS_DRAWOFFSET_Y, BOSS_WIDTH * b.flipW(), BOSS_HEIGHT, null);
 				drawBossHealth(g, b);
 //				b.drawHitbox(g, xLvlOffset);
 //				b.drawAttackBox(g, xLvlOffset);
 			}
 	}
 
-	private void drawBossHealth(Graphics g, KingPigBoss boss) {
+	private void drawBossHealth(Graphics g, Enemy boss) {
 		int w = (int) (250 * main.Game.SCALE);
 		int h = (int) (12 * main.Game.SCALE);
 		int x = main.Game.GAME_WIDTH / 2 - w / 2;
@@ -125,7 +125,7 @@ public class EnemyManager {
 		for (Shark s : currentLevel.getSharks())
 			if (s.isActive()) {
 				g.drawImage(sharkArr[s.getState()][s.getAniIndex()], (int) s.getHitbox().x - xLvlOffset - SHARK_DRAWOFFSET_X + s.flipX(),
-						(int) s.getHitbox().y - SHARK_DRAWOFFSET_Y + (int) s.getPushDrawOffset(), SHARK_WIDTH * s.flipW(), SHARK_HEIGHT, null);
+						(int) s.getHitbox().y - SHARK_DRAWOFFSET_Y, SHARK_WIDTH * s.flipW(), SHARK_HEIGHT, null);
 //				s.drawHitbox(g, xLvlOffset);
 //				s.drawAttackBox(g, xLvlOffset);
 			}
@@ -135,7 +135,7 @@ public class EnemyManager {
 		for (Pinkstar p : currentLevel.getPinkstars())
 			if (p.isActive()) {
 				g.drawImage(pinkstarArr[p.getState()][p.getAniIndex()], (int) p.getHitbox().x - xLvlOffset - PINKSTAR_DRAWOFFSET_X + p.flipX(),
-						(int) p.getHitbox().y - PINKSTAR_DRAWOFFSET_Y + (int) p.getPushDrawOffset(), PINKSTAR_WIDTH * p.flipW(), PINKSTAR_HEIGHT, null);
+						(int) p.getHitbox().y - PINKSTAR_DRAWOFFSET_Y, PINKSTAR_WIDTH * p.flipW(), PINKSTAR_HEIGHT, null);
 //				p.drawHitbox(g, xLvlOffset);
 			}
 	}
@@ -145,7 +145,7 @@ public class EnemyManager {
 			if (c.isActive()) {
 
 				g.drawImage(crabbyArr[c.getState()][c.getAniIndex()], (int) c.getHitbox().x - xLvlOffset - CRABBY_DRAWOFFSET_X + c.flipX(),
-						(int) c.getHitbox().y - CRABBY_DRAWOFFSET_Y + (int) c.getPushDrawOffset(), CRABBY_WIDTH * c.flipW(), CRABBY_HEIGHT, null);
+						(int) c.getHitbox().y - CRABBY_DRAWOFFSET_Y, CRABBY_WIDTH * c.flipW(), CRABBY_HEIGHT, null);
 
 //				c.drawHitbox(g, xLvlOffset);
 //				c.drawAttackBox(g, xLvlOffset);
@@ -154,11 +154,13 @@ public class EnemyManager {
 	}
 
 	public void checkEnemyHit(Rectangle2D.Float attackBox) {
+		int damage = 20;
+
 		for (Crabby c : currentLevel.getCrabs())
 			if (c.isActive())
 				if (c.getState() != DEAD && c.getState() != HIT)
 					if (attackBox.intersects(c.getHitbox())) {
-						c.hurt(20);
+						c.hurt(damage);
 						c.alertFromDamage(playing.getPlayer(), playing);
 						return;
 					}
@@ -170,7 +172,7 @@ public class EnemyManager {
 				else {
 					if (p.getState() != DEAD && p.getState() != HIT)
 						if (attackBox.intersects(p.getHitbox())) {
-							p.hurt(20);
+							p.hurt(damage);
 							p.alertFromDamage(playing.getPlayer(), playing);
 							return;
 						}
@@ -181,7 +183,7 @@ public class EnemyManager {
 			if (s.isActive()) {
 				if (s.getState() != DEAD && s.getState() != HIT)
 					if (attackBox.intersects(s.getHitbox())) {
-						s.hurt(20);
+						s.hurt(damage);
 						s.alertFromDamage(playing.getPlayer(), playing);
 						return;
 					}
@@ -191,7 +193,7 @@ public class EnemyManager {
 			if (b.isActive())
 				if (b.getState() != DEAD && b.getState() != HIT)
 					if (attackBox.intersects(b.getHitbox())) {
-						b.hurt(20);
+						b.hurt(damage);
 						b.alertFromDamage(playing.getPlayer(), playing);
 						return;
 					}
@@ -200,7 +202,7 @@ public class EnemyManager {
 			if (p.isActive())
 				if (p.getState() != DEAD && p.getState() != HIT)
 					if (attackBox.intersects(p.getHitbox())) {
-						p.hurt(20);
+						p.hurt(damage);
 						p.alertFromDamage(playing.getPlayer(), playing);
 						return;
 					}

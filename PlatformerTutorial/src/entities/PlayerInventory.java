@@ -10,8 +10,7 @@ public class PlayerInventory {
 	public static final int GOLD_COIN = 2;
 	public static final int SILVER_COIN = 3;
 	public static final int KEY = 4;
-	public static final int MAP = 5;
-	public static final int ITEM_AMOUNT = 6;
+	public static final int ITEM_AMOUNT = 5;
 
 	private int[] itemCounts = new int[ITEM_AMOUNT];
 

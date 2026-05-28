@@ -22,8 +22,8 @@ public class KingPigBoss extends Enemy {
 
 	public KingPigBoss(float x, float y, int bossVariant) {
 		super(x, y, BOSS_WIDTH, BOSS_HEIGHT, BOSS);
-		initHitbox(40, 31);
-		initAttackBox(60, 30, 36);
+		initHitbox(58, 44);
+		initAttackBox(88, 40, 58);
 		applyBossVariant(bossVariant);
 	}
 
@@ -91,15 +91,15 @@ public class KingPigBoss extends Enemy {
 			case ATTACK:
 				if (aniIndex == 0)
 					attackChecked = false;
-				if (aniIndex <= 1)
+				if (aniIndex <= 1) {
 					turnTowardsPlayer(playing.getPlayer());
+					updateAttackBoxFlip();
+				}
 				if ((aniIndex == 2 || aniIndex == 3) && !attackChecked)
 					checkBossPlayerHit(playing.getPlayer());
 				break;
 			case HIT:
-				if (aniIndex <= GetSpriteAmount(enemyType, state) - 2)
-					pushBack(pushBackDir, lvlData, 1.2f);
-				updatePushBackDrawOffset();
+				updateHitReaction(lvlData, 1.2f);
 				break;
 			}
 		}
@@ -113,12 +113,14 @@ public class KingPigBoss extends Enemy {
 	}
 
 	private void startAttack() {
+		updateAttackBoxFlip();
 		newState(ATTACK);
 		attackChecked = false;
 		attackCooldownTick = attackCooldownDuration;
 	}
 
 	private void checkBossPlayerHit(Player player) {
+		updateAttackBoxFlip();
 		if (attackBox.intersects(player.hitbox))
 			player.changeHealth(-bossDamage, this);
 		attackChecked = true;

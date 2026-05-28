@@ -113,14 +113,7 @@ public class Level {
 	}
 
 	private int getBossVariant() {
-		if (levelIndex != 5)
-			return KingPigBoss.FINAL_BOSS;
-
-		return switch (bosses.size()) {
-		case 0 -> KingPigBoss.GUARD_BOSS;
-		case 1 -> KingPigBoss.CHARGER_BOSS;
-		default -> KingPigBoss.FINAL_BOSS;
-		};
+		return KingPigBoss.FINAL_BOSS;
 	}
 
 	private void ensureCheckpoint() {

@@ -56,9 +56,7 @@ public class Shark extends Enemy {
 
 				break;
 	 		case HIT:
-				if (aniIndex <= GetSpriteAmount(enemyType, state) - 2)
-					pushBack(pushBackDir, lvlData, 2f);
-				updatePushBackDrawOffset();
+				updateHitReaction(lvlData, 2f);
 				break;
 			}
 		}

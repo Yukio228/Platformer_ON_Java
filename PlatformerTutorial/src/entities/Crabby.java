@@ -53,13 +53,11 @@ public class Crabby extends Enemy {
 				if (aniIndex == 3 && !attackChecked)
 					checkPlayerHit(attackBox, playing.getPlayer());
 				break;
-			case HIT:
-				if (aniIndex <= GetSpriteAmount(enemyType, state) - 2)
-					pushBack(pushBackDir, lvlData, 2f);
-				updatePushBackDrawOffset();
-				break;
-			}
+		case HIT:
+			updateHitReaction(lvlData, 2f);
+			break;
 		}
+	}
 	}
 
 }

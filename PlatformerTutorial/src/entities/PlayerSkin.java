@@ -23,4 +23,12 @@ public enum PlayerSkin {
 	public String getAtlasFile() {
 		return atlasFile;
 	}
+
+	public static PlayerSkin[] getWardrobeSkins() {
+		return new PlayerSkin[] { DEFAULT, KING, BOMB_GUY };
+	}
+
+	public boolean isPlayable() {
+		return this != KING_PIG;
+	}
 }

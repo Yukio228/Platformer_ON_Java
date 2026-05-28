@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import javax.imageio.ImageIO;
 
@@ -89,46 +91,83 @@ public class LoadSave {
 	}
 
 	public static BufferedImage[] GetAllLevels() {
-		URL url = LoadSave.class.getResource("/lvls");
-		File file = null;
-
-		if (url != null) {
-			try {
-				file = new File(url.toURI());
-			} catch (URISyntaxException e) {
-				e.printStackTrace();
-			}
-		}
-
-		if (file == null || !file.isDirectory())
-			file = getResourceDir("lvls");
+		File file = getLevelsDir();
 
 		if (file == null)
 			throw new IllegalStateException("Could not load levels directory");
 
-		File[] files = file.listFiles();
-		if (files == null)
-			throw new IllegalStateException("Could not read levels directory: " + file.getAbsolutePath());
+		File[] files = file.listFiles((dir, name) -> isNumberedLevelPng(name));
+		if (files == null || files.length == 0)
+			throw new IllegalStateException("Could not read level png files from: " + file.getAbsolutePath());
 
-		File[] filesSorted = new File[files.length];
+		Arrays.sort(files, Comparator.comparingInt(f -> getLevelNumber(f.getName())));
+		validateLevelFiles(files, file);
 
-		for (int i = 0; i < filesSorted.length; i++)
-			for (int j = 0; j < files.length; j++) {
-				if (files[j].getName().equals((i + 1) + ".png"))
-					filesSorted[i] = files[j];
-
-			}
-
-		BufferedImage[] imgs = new BufferedImage[filesSorted.length];
+		BufferedImage[] imgs = new BufferedImage[files.length];
 
 		for (int i = 0; i < imgs.length; i++)
 			try {
-				imgs[i] = ImageIO.read(filesSorted[i]);
+				imgs[i] = ImageIO.read(files[i]);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
 
 		return imgs;
+	}
+
+	private static File getLevelsDir() {
+		File classpathDir = getClasspathResourceDir("lvls");
+		File[] candidates = { new File("res", "lvls"), new File("PlatformerTutorial/res", "lvls"), new File("../res", "lvls"), new File("../../res", "lvls"), classpathDir };
+
+		for (File file : candidates)
+			if (isUsableLevelsDir(file))
+				return file;
+
+		for (File file : candidates)
+			if (file != null && file.isDirectory())
+				return file;
+
+		return null;
+	}
+
+	private static File getClasspathResourceDir(String dirName) {
+		URL url = LoadSave.class.getResource("/" + dirName);
+		if (url == null)
+			return null;
+
+		try {
+			return new File(url.toURI());
+		} catch (URISyntaxException | IllegalArgumentException e) {
+			return null;
+		}
+	}
+
+	private static boolean isUsableLevelsDir(File file) {
+		return file != null && file.isDirectory() && new File(file, "1.png").isFile();
+	}
+
+	private static boolean isNumberedLevelPng(String name) {
+		if (!name.toLowerCase().endsWith(".png"))
+			return false;
+
+		for (int i = 0; i < name.length() - 4; i++)
+			if (!Character.isDigit(name.charAt(i)))
+				return false;
+
+		return name.length() > 4;
+	}
+
+	private static void validateLevelFiles(File[] files, File dir) {
+		for (int i = 0; i < files.length; i++) {
+			int expectedLevel = i + 1;
+			int actualLevel = getLevelNumber(files[i].getName());
+			if (actualLevel != expectedLevel)
+				throw new IllegalStateException("Missing level " + expectedLevel + ".png in " + dir.getAbsolutePath());
+		}
+	}
+
+	private static int getLevelNumber(String fileName) {
+		return Integer.parseInt(fileName.substring(0, fileName.length() - 4));
 	}
 
 	private static File getResourceFile(String fileName) {

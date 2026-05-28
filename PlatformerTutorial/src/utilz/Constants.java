@@ -175,10 +175,11 @@ public class Constants {
 
 		public static final int BOSS_WIDTH_DEFAULT = 76;
 		public static final int BOSS_HEIGHT_DEFAULT = 56;
-		public static final int BOSS_WIDTH = (int) (BOSS_WIDTH_DEFAULT * Game.SCALE);
-		public static final int BOSS_HEIGHT = (int) (BOSS_HEIGHT_DEFAULT * Game.SCALE);
-		public static final int BOSS_DRAWOFFSET_X = (int) (17 * Game.SCALE);
-		public static final int BOSS_DRAWOFFSET_Y = (int) (21 * Game.SCALE);
+		public static final float BOSS_DRAW_SCALE = 1.45f;
+		public static final int BOSS_WIDTH = (int) (BOSS_WIDTH_DEFAULT * Game.SCALE * BOSS_DRAW_SCALE);
+		public static final int BOSS_HEIGHT = (int) (BOSS_HEIGHT_DEFAULT * Game.SCALE * BOSS_DRAW_SCALE);
+		public static final int BOSS_DRAWOFFSET_X = (int) (27 * Game.SCALE);
+		public static final int BOSS_DRAWOFFSET_Y = (int) (34 * Game.SCALE);
 
 		public static final int PIRATE_MOB_WIDTH_DEFAULT = 48;
 		public static final int PIRATE_MOB_HEIGHT_DEFAULT = 48;

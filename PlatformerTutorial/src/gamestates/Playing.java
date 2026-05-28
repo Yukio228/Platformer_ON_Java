@@ -236,11 +236,12 @@ public class Playing extends State implements Statemethods {
 
 	public void addDialogue(int x, int y, int type) {
 		// Not adding a new one, we are recycling. #ThinkGreen lol
-		dialogEffects.add(new DialogueEffect(x, y - (int) (Game.SCALE * 15), type));
+		int effectY = Math.max(0, y - (int) (Game.SCALE * 15));
+		dialogEffects.add(new DialogueEffect(x, effectY, type));
 		for (DialogueEffect de : dialogEffects)
 			if (!de.isActive())
 				if (de.getType() == type) {
-					de.reset(x, -(int) (Game.SCALE * 15));
+					de.reset(x, effectY);
 					return;
 				}
 	}
@@ -416,11 +417,8 @@ public class Playing extends State implements Statemethods {
 
 		if (!gameOver && !gameCompleted && !lvlCompleted)
 			switch (e.getKeyCode()) {
-			case KeyEvent.VK_1:
+			case KeyEvent.VK_Q:
 				player.getInventory().useRedPotion(player);
-				break;
-			case KeyEvent.VK_2:
-				player.getInventory().useBluePotion(player);
 				break;
 			case KeyEvent.VK_A, KeyEvent.VK_LEFT:
 				player.setLeft(true);

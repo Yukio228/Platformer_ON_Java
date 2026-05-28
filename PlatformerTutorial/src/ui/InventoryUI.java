@@ -17,7 +17,7 @@ public class InventoryUI {
 	private BufferedImage slotImg;
 	private BufferedImage panelImg;
 	private BufferedImage[] itemImgs = new BufferedImage[PlayerInventory.ITEM_AMOUNT];
-	private String[] itemNames = { "HEALTH", "POWER", "GOLD", "SILVER", "KEY", "MAP" };
+	private String[] itemNames = { "HEALTH", "POWER", "GOLD", "SILVER", "KEY" };
 	private int mouseOverItem = -1;
 
 	public InventoryUI() {
@@ -34,6 +34,7 @@ public class InventoryUI {
 		for (int i = 0; i < PlayerInventory.ITEM_AMOUNT; i++) {
 			Rectangle bounds = getHotbarSlotBounds(i);
 			drawSlot(g, inventory, i, bounds.x, bounds.y, bounds.width, bounds.height, false, mouseOverItem == i);
+			drawHotkey(g, i, bounds);
 		}
 	}
 
@@ -91,6 +92,24 @@ public class InventoryUI {
 		g.drawRoundRect(x + 1, y + 1, w - 3, h - 3, 8, 8);
 	}
 
+	private void drawHotkey(Graphics g, int itemType, Rectangle bounds) {
+		String key = switch (itemType) {
+		case PlayerInventory.RED_POTION -> "Q";
+		default -> "";
+		};
+
+		if (key.isEmpty())
+			return;
+
+		Font oldFont = g.getFont();
+		g.setFont(new Font("Arial", Font.BOLD, (int) (8 * Game.SCALE)));
+		g.setColor(new Color(25, 15, 12, 185));
+		g.fillRect(bounds.x + (int) (3 * Game.SCALE), bounds.y + (int) (3 * Game.SCALE), (int) (10 * Game.SCALE), (int) (10 * Game.SCALE));
+		g.setColor(Color.WHITE);
+		g.drawString(key, bounds.x + (int) (5 * Game.SCALE), bounds.y + (int) (12 * Game.SCALE));
+		g.setFont(oldFont);
+	}
+
 	private void drawCount(Graphics g, int count, int x, int y, int w, int h) {
 		Font oldFont = g.getFont();
 		g.setFont(new Font("Arial", Font.BOLD, (int) (9 * Game.SCALE)));
@@ -117,10 +136,9 @@ public class InventoryUI {
 		panelImg = LoadSave.GetSpriteAtlas(LoadSave.UI_GREEN_PANEL);
 		itemImgs[PlayerInventory.RED_POTION] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_RED_POTION);
 		itemImgs[PlayerInventory.BLUE_POTION] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_BLUE_POTION);
+		itemImgs[PlayerInventory.KEY] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_KEY);
 		itemImgs[PlayerInventory.GOLD_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_GOLD_COIN);
 		itemImgs[PlayerInventory.SILVER_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_SILVER_COIN);
-		itemImgs[PlayerInventory.KEY] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_KEY);
-		itemImgs[PlayerInventory.MAP] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_MAP);
 	}
 
 	public void mouseMoved(MouseEvent e, boolean overlayOpen) {

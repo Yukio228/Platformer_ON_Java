@@ -82,7 +82,7 @@ public abstract class Enemy extends Entity {
 	}
 
 	protected void inAirChecks(int[][] lvlData, Playing playing) {
-		if (state != HIT && state != DEAD) {
+		if (state != DEAD) {
 			updateInAir(lvlData);
 			playing.getObjectManager().checkSpikesTouched(this);
 			if (IsEntityInWater(hitbox, lvlData))
@@ -246,6 +246,14 @@ public abstract class Enemy extends Entity {
 		return false;
 	}
 
+	protected void updateHitReaction(int[][] lvlData, float pushBackSpeedMultiplier) {
+		if (aniIndex <= GetSpriteAmount(enemyType, state) - 2)
+			pushBack(pushBackDir, lvlData, pushBackSpeedMultiplier);
+		if (!IsFloor(hitbox, lvlData))
+			inAir = true;
+		updatePushBackDrawOffset();
+	}
+
 	public void hurt(int amount) {
 		currentHealth -= amount;
 		if (currentHealth <= 0)
@@ -284,7 +292,7 @@ public abstract class Enemy extends Entity {
 
 	protected void updateAnimationTick() {
 		aniTick++;
-		if (aniTick >= ANI_SPEED) {
+		if (aniTick >= getAnimationSpeed()) {
 			aniTick = 0;
 			aniIndex++;
 			if (aniIndex >= GetSpriteAmount(enemyType, state)) {
@@ -309,6 +317,16 @@ public abstract class Enemy extends Entity {
 				}
 			}
 		}
+	}
+
+	protected int getAnimationSpeed() {
+		return switch (state) {
+		case RUNNING -> 12;
+		case ATTACK -> 15;
+		case HIT -> 12;
+		case DEAD -> 18;
+		default -> ANI_SPEED;
+		};
 	}
 
 	protected void changeWalkDir() {

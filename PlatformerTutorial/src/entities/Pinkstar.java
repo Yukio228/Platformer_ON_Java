@@ -64,13 +64,11 @@ public class Pinkstar extends Enemy {
 					checkRollOver(playing);
 				}
 				break;
-			case HIT:
-				if (aniIndex <= GetSpriteAmount(enemyType, state) - 2)
-					pushBack(pushBackDir, lvlData, 2f);
-				updatePushBackDrawOffset();
-				tickAfterRollInIdle = 120;
+		case HIT:
+			updateHitReaction(lvlData, 2f);
+			tickAfterRollInIdle = 120;
 
-				break;
+			break;
 			}
 		}
 	}

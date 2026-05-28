@@ -25,12 +25,13 @@ public class GameOptions extends State implements Statemethods {
 	private int bgX, bgY, bgW, bgH;
 	private UrmButton menuB;
 	private Rectangle screenSelectBounds, resolutionSelectBounds;
-	private Rectangle[] screenModeOptionBounds = new Rectangle[2];
+	private final ScreenMode[] screenModes = ScreenMode.values();
+	private Rectangle[] screenModeOptionBounds = new Rectangle[screenModes.length];
 	private Rectangle[] resolutionOptionBounds = new Rectangle[3];
 	private boolean screenSelectMouseOver, screenSelectMousePressed, resolutionSelectMouseOver, resolutionSelectMousePressed;
 	private boolean screenDropdownOpen, resolutionDropdownOpen;
-	private boolean[] screenModeMouseOver = new boolean[2];
-	private boolean[] screenModeMousePressed = new boolean[2];
+	private boolean[] screenModeMouseOver = new boolean[screenModes.length];
+	private boolean[] screenModeMousePressed = new boolean[screenModes.length];
 	private boolean[] resolutionMouseOver = new boolean[3];
 	private boolean[] resolutionMousePressed = new boolean[3];
 	private static final Color UI_DARK = new Color(51, 50, 61);
@@ -147,7 +148,7 @@ public class GameOptions extends State implements Statemethods {
 	private void drawScreenModeOption(Graphics g, int index) {
 		Rectangle row = screenModeOptionBounds[index];
 		int s = (int) Game.SCALE;
-		ScreenMode mode = index == 0 ? ScreenMode.WINDOWED : ScreenMode.FULLSCREEN;
+		ScreenMode mode = screenModes[index];
 		boolean selected = game.getGameWindow().getScreenMode() == mode;
 		boolean hover = screenModeMouseOver[index] || screenModeMousePressed[index];
 
@@ -304,7 +305,7 @@ public class GameOptions extends State implements Statemethods {
 	private boolean releaseScreenModeButton(MouseEvent e) {
 		for (int i = 0; i < screenModeOptionBounds.length; i++)
 			if (screenModeMousePressed[i] && screenModeOptionBounds[i].contains(e.getPoint())) {
-				game.getGameWindow().setScreenMode(i == 0 ? ScreenMode.WINDOWED : ScreenMode.FULLSCREEN);
+				game.getGameWindow().setScreenMode(screenModes[i]);
 				screenDropdownOpen = false;
 				resetDisplayButtons();
 				return true;
