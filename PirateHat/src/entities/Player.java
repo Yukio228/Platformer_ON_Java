@@ -18,6 +18,10 @@ import utilz.LoadSave;
 
 public class Player extends Entity {
 
+	private static final int BASIC_ATTACK_COOLDOWN_TICKS = 70;
+	private static final int POWER_ATTACK_COOLDOWN_TICKS = 110;
+	private static final int JUMP_COOLDOWN_TICKS = 40;
+
 	private BufferedImage[][] animations;
 	private boolean moving = false, attacking = false;
 	private boolean left, right, jump;
@@ -67,6 +71,9 @@ public class Player extends Entity {
 	private PlayerSkin skin = PlayerSkin.DEFAULT;
 	private int movementNoiseCooldown;
 	private int attackNoiseCooldown;
+	private int attackCooldownTick;
+	private int jumpCooldownTick;
+	private boolean applyJumpCooldownOnLanding;
 	private boolean deathRecorded;
 
 	public Player(float x, float y, int width, int height, Playing playing) {
@@ -105,6 +112,10 @@ public class Player extends Entity {
 			movementNoiseCooldown--;
 		if (attackNoiseCooldown > 0)
 			attackNoiseCooldown--;
+		if (attackCooldownTick > 0)
+			attackCooldownTick--;
+		if (jumpCooldownTick > 0)
+			jumpCooldownTick--;
 
 		if (currentHealth <= 0) {
 			if (state != DEAD) {
@@ -112,15 +123,19 @@ public class Player extends Entity {
 					playing.recordPlayerDeath();
 					deathRecorded = true;
 				}
-				state = DEAD;
-				aniTick = 0;
-				aniIndex = 0;
+				newState(DEAD);
+				resetHitReaction();
+				attacking = false;
+				powerAttackActive = false;
+				powerAttackTick = 0;
 				playing.setPlayerDying(true);
 				playing.getGame().getAudioPlayer().playEffect(AudioPlayer.DIE);
 
-				// Check if player died in air
 				if (!IsEntityOnFloor(hitbox, lvlData)) {
 					inAir = true;
+					airSpeed = Math.max(airSpeed, 0);
+				} else {
+					inAir = false;
 					airSpeed = 0;
 				}
 			} else if (isDeathAnimationFinished()) {
@@ -129,14 +144,7 @@ public class Player extends Entity {
 				playing.getGame().getAudioPlayer().playEffect(AudioPlayer.GAMEOVER);
 			} else {
 				updateAnimationTick();
-
-				// Fall if in air
-				if (inAir)
-					if (CanMoveHere(hitbox.x, hitbox.y + airSpeed, hitbox.width, hitbox.height, lvlData)) {
-						hitbox.y += airSpeed;
-						airSpeed += GRAVITY;
-					} else
-						inAir = false;
+				updateAirPosition(false);
 
 			}
 
@@ -149,6 +157,7 @@ public class Player extends Entity {
 			if (aniIndex <= GetSpriteAmount(state) - 3)
 				pushBack(pushBackDir, lvlData, 1.25f);
 			updatePushBackDrawOffset();
+			updateHitAirPosition();
 		} else
 			updatePos();
 
@@ -274,8 +283,11 @@ public class Player extends Entity {
 				attackChecked = false;
 				if (state == HIT) {
 					newState(IDLE);
+					resetHitReaction();
 					airSpeed = 0f;
-					if (!IsFloor(hitbox, 0, lvlData))
+					if (IsEntityOnFloor(hitbox, lvlData))
+						inAir = false;
+					else
 						inAir = true;
 				}
 			}
@@ -402,18 +414,55 @@ public class Player extends Entity {
 	}
 
 	private void jump() {
-		if (inAir)
+		if (inAir || jumpCooldownTick > 0)
 			return;
 		playing.getGame().getAudioPlayer().playEffect(AudioPlayer.JUMP);
 		playing.emitPlayerNoise(NoiseType.JUMP, getCenterX(), getCenterY());
 		inAir = true;
 		airSpeed = jumpSpeed;
+		applyJumpCooldownOnLanding = true;
 	}
 
 	private void resetInAir() {
+		land(true);
+	}
+
+	private void land(boolean emitNoise) {
 		inAir = false;
 		airSpeed = 0;
-		playing.emitPlayerNoise(NoiseType.LANDING, getCenterX(), getCenterY());
+		if (applyJumpCooldownOnLanding) {
+			jumpCooldownTick = JUMP_COOLDOWN_TICKS;
+			applyJumpCooldownOnLanding = false;
+		}
+		if (emitNoise)
+			playing.emitPlayerNoise(NoiseType.LANDING, getCenterX(), getCenterY());
+	}
+
+	private void updateHitAirPosition() {
+		if (!inAir && !IsEntityOnFloor(hitbox, lvlData))
+			inAir = true;
+		updateAirPosition(true);
+	}
+
+	private void updateAirPosition(boolean emitLandingNoise) {
+		if (!inAir)
+			return;
+
+		if (CanMoveHere(hitbox.x, hitbox.y + airSpeed, hitbox.width, hitbox.height, lvlData)) {
+			hitbox.y += airSpeed;
+			airSpeed += GRAVITY;
+		} else {
+			hitbox.y = GetEntityYPosUnderRoofOrAboveFloor(hitbox, airSpeed);
+			if (airSpeed > 0)
+				land(emitLandingNoise);
+			else
+				airSpeed = fallSpeedAfterCollision;
+		}
+	}
+
+	private void resetHitReaction() {
+		pushDrawOffset = 0;
+		pushBackOffsetDir = UP;
 	}
 
 	private void updateXPos(float xSpeed) {
@@ -487,7 +536,17 @@ public class Player extends Entity {
 	}
 
 	public void setAttacking(boolean attacking) {
-		this.attacking = attacking;
+		if (!attacking) {
+			this.attacking = false;
+			return;
+		}
+
+		if (this.attacking || powerAttackActive || attackCooldownTick > 0)
+			return;
+
+		this.attacking = true;
+		attackChecked = false;
+		attackCooldownTick = BASIC_ATTACK_COOLDOWN_TICKS;
 	}
 
 	public boolean isLeft() {
@@ -524,6 +583,10 @@ public class Player extends Entity {
 		powerValue = powerMaxValue;
 		movementNoiseCooldown = 0;
 		attackNoiseCooldown = 0;
+		attackCooldownTick = 0;
+		jumpCooldownTick = 0;
+		applyJumpCooldownOnLanding = false;
+		resetHitReaction();
 
 		hitbox.x = x;
 		hitbox.y = y;
@@ -545,10 +608,12 @@ public class Player extends Entity {
 	}
 
 	public void powerAttack() {
-		if (powerAttackActive)
+		if (powerAttackActive || attacking || attackCooldownTick > 0)
 			return;
 		if (powerValue >= 60) {
 			powerAttackActive = true;
+			attackChecked = false;
+			attackCooldownTick = POWER_ATTACK_COOLDOWN_TICKS;
 			changePower(-60);
 			playing.emitPlayerNoise(NoiseType.POWER_ATTACK, getCenterX(), getCenterY());
 		}

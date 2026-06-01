@@ -453,7 +453,7 @@ public class Playing extends State implements Statemethods {
 			return;
 		}
 
-		if (!gameOver && !gameCompleted && !lvlCompleted && e.getKeyCode() == KeyEvent.VK_I) {
+		if (!gameOver && !gameCompleted && !lvlCompleted && (e.getKeyCode() == KeyEvent.VK_I || e.getKeyCode() == KeyEvent.VK_TAB)) {
 			inventoryOpen = !inventoryOpen;
 			if (!inventoryOpen)
 				inventoryUI.clearMouseOver();
