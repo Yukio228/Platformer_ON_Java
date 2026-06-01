@@ -1,7 +1,8 @@
 .idea/
 out/
-PlatformerTutorial/.idea/
-PlatformerTutorial/out/
+logs/
+PirateHat/.idea/
+PirateHat/out/
 .DS_Store
 *.class
 *.tmp
