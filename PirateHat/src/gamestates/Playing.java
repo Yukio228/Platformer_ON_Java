@@ -130,8 +130,7 @@ public class Playing extends State implements Statemethods {
 		for (int i = 0; i < 10; i++)
 			dialogEffects.add(new DialogueEffect(0, 0, QUESTION));
 
-		for (DialogueEffect de : dialogEffects)
-			de.deactive();
+		deactivateDialogueEffects();
 	}
 
 	private void loadDialogueImgs() {
@@ -267,15 +266,18 @@ public class Playing extends State implements Statemethods {
 	}
 
 	public void addDialogue(int x, int y, int type) {
-		// Not adding a new one, we are recycling. #ThinkGreen lol
 		int effectY = Math.max(0, y - (int) (Game.SCALE * 15));
-		dialogEffects.add(new DialogueEffect(x, effectY, type));
 		for (DialogueEffect de : dialogEffects)
 			if (!de.isActive())
 				if (de.getType() == type) {
 					de.reset(x, effectY);
 					return;
 				}
+	}
+
+	private void deactivateDialogueEffects() {
+		for (DialogueEffect de : dialogEffects)
+			de.deactive();
 	}
 
 	private void checkCloseToBorder() {
@@ -358,7 +360,7 @@ public class Playing extends State implements Statemethods {
 		alertManager.clear();
 		sharedBlackboard.clear();
 		performanceTracker.resetForLevel();
-		dialogEffects.clear();
+		deactivateDialogueEffects();
 		inventoryOpen = false;
 	}
 
@@ -374,7 +376,7 @@ public class Playing extends State implements Statemethods {
 		noiseManager.clear();
 		alertManager.clear();
 		sharedBlackboard.clear();
-		dialogEffects.clear();
+		deactivateDialogueEffects();
 	}
 
 	private void setDrawRainBoolean() {

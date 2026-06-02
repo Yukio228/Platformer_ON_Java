@@ -13,7 +13,7 @@ import main.Game;
 public class AlertManager {
 	private final ArrayList<AlertEvent> alerts = new ArrayList<>();
 
-	public void update() {
+	public synchronized void update() {
 		Iterator<AlertEvent> iterator = alerts.iterator();
 		while (iterator.hasNext()) {
 			AlertEvent event = iterator.next();
@@ -24,12 +24,14 @@ public class AlertManager {
 	}
 
 	public void sendAlert(Enemy source, float x, float y, float radius, float danger, int durationTicks, NoiseManager noiseManager) {
-		alerts.add(new AlertEvent(x, y, radius, danger, durationTicks, source));
+		synchronized (this) {
+			alerts.add(new AlertEvent(x, y, radius, danger, durationTicks, source));
+		}
 		if (noiseManager != null)
 			noiseManager.addNoise(NoiseType.ALLY_ALERT, x, y, Math.max(radius * 0.55f, Game.TILES_SIZE * 2f), danger, Math.min(durationTicks, 45));
 	}
 
-	public AlertEvent findAlertFor(Enemy enemy) {
+	public synchronized AlertEvent findAlertFor(Enemy enemy) {
 		AlertEvent best = null;
 		float bestDanger = -1f;
 		for (AlertEvent event : alerts) {
@@ -43,11 +45,11 @@ public class AlertManager {
 		return best;
 	}
 
-	public List<AlertEvent> getAlerts() {
-		return Collections.unmodifiableList(alerts);
+	public synchronized List<AlertEvent> getAlerts() {
+		return Collections.unmodifiableList(new ArrayList<>(alerts));
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		alerts.clear();
 	}
 }
