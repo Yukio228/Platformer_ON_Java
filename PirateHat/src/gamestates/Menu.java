@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import main.Game;
 import ui.MenuButton;
 import utilz.LoadSave;
+import static utilz.Constants.UI.Buttons.B_HEIGHT;
 
 public class Menu extends State implements Statemethods {
 
@@ -17,8 +18,8 @@ public class Menu extends State implements Statemethods {
 
 	public Menu(Game game) {
 		super(game);
-		loadButtons();
 		loadBackground();
+		loadButtons();
 		backgroundImgPink = LoadSave.GetSpriteAtlas(LoadSave.MENU_BACKGROUND_IMG);
 
 	}
@@ -32,10 +33,17 @@ public class Menu extends State implements Statemethods {
 	}
 
 	private void loadButtons() {
-		buttons[0] = new MenuButton(Game.GAME_WIDTH / 2, (int) (130 * Game.SCALE), 0, Gamestate.LEVEL_SELECT);
-		buttons[1] = new MenuButton(Game.GAME_WIDTH / 2, (int) (220 * Game.SCALE), 1, Gamestate.OPTIONS);
-		buttons[2] = new MenuButton(Game.GAME_WIDTH / 2, (int) (310 * Game.SCALE), 2, Gamestate.QUIT);
-		buttons[3] = new MenuButton(Game.GAME_WIDTH / 2, (int) (366 * Game.SCALE), 3, Gamestate.WARDROBE);
+		int centerX = Game.GAME_WIDTH / 2;
+		int topPadding = (int) (104 * Game.SCALE);
+		int bottomPadding = (int) (32 * Game.SCALE);
+		int availableH = menuHeight - topPadding - bottomPadding;
+		int buttonGap = (availableH - buttons.length * B_HEIGHT) / (buttons.length - 1);
+		int startY = menuY + topPadding;
+
+		buttons[0] = new MenuButton(centerX, startY, 0, Gamestate.PLAYING);
+		buttons[1] = new MenuButton(centerX, startY + B_HEIGHT + buttonGap, 1, Gamestate.OPTIONS);
+		buttons[2] = new MenuButton(centerX, startY + 2 * (B_HEIGHT + buttonGap), 2, Gamestate.QUIT);
+		buttons[3] = new MenuButton(centerX, startY + 3 * (B_HEIGHT + buttonGap), 3, Gamestate.WARDROBE);
 	}
 
 	@Override
@@ -67,9 +75,7 @@ public class Menu extends State implements Statemethods {
 		for (MenuButton mb : buttons) {
 			if (isIn(e, mb)) {
 				if (mb.isMousePressed()) {
-					if (mb.getState() == Gamestate.LEVEL_SELECT)
-						setGamestate(Gamestate.LEVEL_SELECT);
-					else if (mb.getState() == Gamestate.PLAYING)
+					if (mb.getState() == Gamestate.PLAYING)
 						setGamestate(Gamestate.PLAYING);
 					else
 						mb.applyGamestate();

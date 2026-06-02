@@ -26,11 +26,14 @@ public class GameOverOverlay {
 	}
 
 	private void createButtons() {
-		int menuX = (int) (335 * Game.SCALE);
-		int playX = (int) (440 * Game.SCALE);
-		int y = (int) (195 * Game.SCALE);
-		play = new UrmButton(playX, y, URM_SIZE, URM_SIZE, 0);
-		menu = new UrmButton(menuX, y, URM_SIZE, URM_SIZE, 2);
+		int centerX = imgX + imgW / 2;
+		int buttonGap = (int) (49 * Game.SCALE);
+		int totalW = 2 * URM_SIZE + buttonGap;
+		int startX = centerX - totalW / 2;
+		int y = imgY + (int) (95 * Game.SCALE);
+
+		menu = new UrmButton(startX, y, URM_SIZE, URM_SIZE, 2);
+		play = new UrmButton(startX + URM_SIZE + buttonGap, y, URM_SIZE, URM_SIZE, 0);
 
 	}
 

@@ -2,19 +2,26 @@
 .idea/
 *.iml
 
+# VS Code
+.vscode/
+
 # Build output
 out/
 build/
 target/
 bin/
+dist/
 *.class
 
 # Temporary files
+*.log
 *.tmp
 *.bak
 *.swp
 tmp/
 logs/
+hs_err_pid*
+replay_pid*
 
 # OS files
 .DS_Store

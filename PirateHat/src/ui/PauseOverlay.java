@@ -26,14 +26,15 @@ public class PauseOverlay {
 	}
 
 	private void createUrmButtons() {
-		int menuX = (int) (313 * Game.SCALE);
-		int replayX = (int) (387 * Game.SCALE);
-		int unpauseX = (int) (462 * Game.SCALE);
-		int bY = (int) (325 * Game.SCALE);
+		int centerX = bgX + bgW / 2;
+		int buttonGap = (int) (18 * Game.SCALE);
+		int totalW = 3 * URM_SIZE + 2 * buttonGap;
+		int startX = centerX - totalW / 2;
+		int bY = bgY + bgH - URM_SIZE - (int) (33 * Game.SCALE);
 
-		menuB = new UrmButton(menuX, bY, URM_SIZE, URM_SIZE, 2);
-		replayB = new UrmButton(replayX, bY, URM_SIZE, URM_SIZE, 1);
-		unpauseB = new UrmButton(unpauseX, bY, URM_SIZE, URM_SIZE, 0);
+		menuB = new UrmButton(startX, bY, URM_SIZE, URM_SIZE, 2);
+		replayB = new UrmButton(startX + URM_SIZE + buttonGap, bY, URM_SIZE, URM_SIZE, 1);
+		unpauseB = new UrmButton(startX + 2 * (URM_SIZE + buttonGap), bY, URM_SIZE, URM_SIZE, 0);
 	}
 
 	private void loadBackground() {

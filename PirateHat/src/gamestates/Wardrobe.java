@@ -61,7 +61,9 @@ public class Wardrobe extends State implements Statemethods {
 		for (int i = 0; i < skinCards.length; i++)
 			skinCards[i] = new Rectangle(startX + i * (cardW + gap), cardY, cardW, cardH);
 
-		backButton = new Rectangle(panelX + (int) (30 * Game.SCALE), panelY + panelH - (int) (55 * Game.SCALE), (int) (92 * Game.SCALE), (int) (34 * Game.SCALE));
+		int backW = (int) (92 * Game.SCALE);
+		int backH = (int) (34 * Game.SCALE);
+		backButton = new Rectangle(panelX + panelW / 2 - backW / 2, panelY + panelH - (int) (55 * Game.SCALE), backW, backH);
 	}
 
 	@Override

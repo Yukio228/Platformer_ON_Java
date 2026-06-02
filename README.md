@@ -48,7 +48,6 @@ These controls are determined from the current source code:
 - `Q`: use red potion
 - `I`: inventory
 - `Esc`: pause or close inventory
-- `7` on the level select screen: open the AI demo level
 - `F3`..`F7`: AI debug and metrics tools
 
 ## Assets

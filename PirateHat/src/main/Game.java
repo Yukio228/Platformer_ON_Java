@@ -6,7 +6,6 @@ import audio.AudioPlayer;
 import database.SaveManager;
 import gamestates.GameOptions;
 import gamestates.Gamestate;
-import gamestates.LevelSelect;
 import gamestates.Menu;
 import gamestates.Playing;
 import gamestates.Wardrobe;
@@ -22,7 +21,6 @@ public class Game implements Runnable {
 
 	private Playing playing;
 	private Menu menu;
-	private LevelSelect levelSelect;
 	private Wardrobe wardrobe;
 	private GameOptions gameOptions;
 	private AudioOptions audioOptions;
@@ -55,7 +53,6 @@ public class Game implements Runnable {
 		playing = new Playing(this);
 		saveManager.ensureProgress(playing.getLevelManager().getAmountOfLevels());
 		playing.getPlayer().setSkin(saveManager.getPlayerSkin());
-		levelSelect = new LevelSelect(this);
 		wardrobe = new Wardrobe(this);
 		menu = new Menu(this);
 		gameOptions = new GameOptions(this);
@@ -69,7 +66,6 @@ public class Game implements Runnable {
 	public void update() {
 		switch (Gamestate.state) {
 		case MENU -> menu.update();
-		case LEVEL_SELECT -> levelSelect.update();
 		case WARDROBE -> wardrobe.update();
 		case PLAYING -> playing.update();
 		case OPTIONS -> gameOptions.update();
@@ -81,7 +77,6 @@ public class Game implements Runnable {
 	public void render(Graphics g) {
 		switch (Gamestate.state) {
 		case MENU -> menu.draw(g);
-		case LEVEL_SELECT -> levelSelect.draw(g);
 		case WARDROBE -> wardrobe.draw(g);
 		case PLAYING -> playing.draw(g);
 		case OPTIONS -> gameOptions.draw(g);
@@ -150,10 +145,6 @@ public class Game implements Runnable {
 
 	public Playing getPlaying() {
 		return playing;
-	}
-
-	public LevelSelect getLevelSelect() {
-		return levelSelect;
 	}
 
 	public Wardrobe getWardrobe() {
