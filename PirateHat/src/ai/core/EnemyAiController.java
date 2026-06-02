@@ -2,6 +2,7 @@ package ai.core;
 
 import static utilz.Constants.EnemyConstants.BOSS;
 import static utilz.Constants.EnemyConstants.IsPirateMob;
+import static utilz.HelpMethods.IsAllTilesWalkable;
 
 import java.util.Collections;
 import java.util.List;
@@ -32,6 +33,8 @@ import gamestates.Playing;
 import main.Game;
 
 public class EnemyAiController {
+	private static final int LOST_SIGHT_DEAGGRO_TICKS = 45;
+
 	private final Enemy enemy;
 	private final EnemyAiProfile baseProfile;
 	private EnemyAiProfile profile;
@@ -54,6 +57,7 @@ public class EnemyAiController {
 	private Vector2 lastPathTarget;
 	private int lastNoiseTick = -100000;
 	private int lastAlertTick = -100000;
+	private int lostEngageTicks;
 
 	public EnemyAiController(Enemy enemy, EnemyAiProfile profile) {
 		this.enemy = enemy;
@@ -79,14 +83,16 @@ public class EnemyAiController {
 		EnemyContext context = new EnemyContext(enemy, playing, lvlData, tick);
 		processDamage(context);
 		boolean playerSeen = processVision(context);
+		boolean playerContact = processContact(context);
 		processHearing(context);
 		processAlerts(context);
 
 		if (IsPirateMob(enemy.getEnemyType()))
 			pirateMobTree.tick(context);
 
-		updateStateMachine(context, playerSeen);
-		selectedAction = utility.chooseAction(enemy, context.player(), profile, memory, isPlayerInAttackRange(context.player()), playing.getEnemyManager().countAlliesNear(enemy, Game.TILES_SIZE * 5));
+		updateStateMachine(context, playerSeen, playerContact);
+		selectedAction = utility.chooseAction(enemy, context.player(), profile, memory, canAttackPlayer(context.player(), context.levelData()),
+				playing.getEnemyManager().countAlliesNear(enemy, Game.TILES_SIZE * 5));
 		if (state == EnemyAiState.RETREAT)
 			selectedAction = EnemyAction.RETREAT;
 		else if (state == EnemyAiState.ATTACK)
@@ -129,11 +135,19 @@ public class EnemyAiController {
 			float px = player.getHitbox().x + player.getHitbox().width / 2f;
 			float py = player.getHitbox().y + player.getHitbox().height / 2f;
 			currentTarget = new Vector2(px, py);
-			if (vision.getSuspicionLevel() >= 70f)
+			if (vision.getSuspicionLevel() >= 70f && canWalkDirectlyToTarget(context.levelData(), currentTarget))
 				memory.rememberPlayer(px, py, tick);
 		}
 		if (detected) {
-			memory.rememberPlayer(player.getHitbox().x + player.getHitbox().width / 2f, player.getHitbox().y + player.getHitbox().height / 2f, tick);
+			Vector2 playerTarget = new Vector2(player.getHitbox().x + player.getHitbox().width / 2f, player.getHitbox().y + player.getHitbox().height / 2f);
+			if (!canWalkDirectlyToTarget(context.levelData(), playerTarget) && !isTouchingPlayer(player)) {
+				if (state == EnemyAiState.ALERT || state == EnemyAiState.CHASE || state == EnemyAiState.ATTACK)
+					disengage(context.playing(), "seen but unreachable");
+				context.metrics().record(tick, enemy, "PLAYER_SEEN_UNREACHABLE", state, 0, 0, "");
+				return false;
+			}
+
+			memory.rememberPlayer(playerTarget.x(), playerTarget.y(), tick);
 			if (state == EnemyAiState.PATROL || state == EnemyAiState.INVESTIGATE || state == EnemyAiState.SEARCH || state == EnemyAiState.RETURN_TO_PATROL)
 				changeState(EnemyAiState.ALERT, context.playing(), "player seen");
 			else if (state != EnemyAiState.ATTACK && state != EnemyAiState.RETREAT)
@@ -147,15 +161,33 @@ public class EnemyAiController {
 		return false;
 	}
 
+	private boolean processContact(EnemyContext context) {
+		Player player = context.player();
+		if (!isTouchingPlayer(player))
+			return false;
+
+		float px = player.getHitbox().x + player.getHitbox().width / 2f;
+		float py = player.getHitbox().y + player.getHitbox().height / 2f;
+		currentTarget = new Vector2(px, py);
+		memory.rememberPlayer(px, py, tick);
+		if (state == EnemyAiState.PATROL || state == EnemyAiState.INVESTIGATE || state == EnemyAiState.SEARCH || state == EnemyAiState.RETURN_TO_PATROL)
+			changeState(EnemyAiState.CHASE, context.playing(), "player contact");
+		context.metrics().record(tick, enemy, "PLAYER_CONTACT", state, 0, 0, "");
+		return true;
+	}
+
 	private void processHearing(EnemyContext context) {
 		NoiseEvent noise = hearing.hear(context.noiseManager(), enemy, profile);
 		if (noise == null || tick - lastNoiseTick < 18)
 			return;
 		if (state == EnemyAiState.CHASE || state == EnemyAiState.ATTACK || state == EnemyAiState.RETREAT)
 			return;
+		Vector2 noiseTarget = new Vector2(noise.getX(), noise.getY());
+		if (!canWalkDirectlyToTarget(context.levelData(), noiseTarget))
+			return;
 		lastNoiseTick = tick;
 		memory.rememberNoise(noise.getX(), noise.getY(), tick, Math.min(0.85f, 0.35f + noise.getIntensity() * 0.5f));
-		currentTarget = new Vector2(noise.getX(), noise.getY());
+		currentTarget = noiseTarget;
 		changeState(EnemyAiState.INVESTIGATE, context.playing(), "noise " + noise.getType());
 		context.metrics().record(tick, enemy, "HEARD_NOISE", state, 0, 0, noise.getType().name());
 	}
@@ -166,23 +198,33 @@ public class EnemyAiController {
 			return;
 		if (state == EnemyAiState.CHASE || state == EnemyAiState.ATTACK)
 			return;
+		Vector2 alertTarget = new Vector2(alert.getX(), alert.getY());
+		if (!canWalkDirectlyToTarget(context.levelData(), alertTarget))
+			return;
 		lastAlertTick = tick;
 		memory.rememberAlert(alert.getX(), alert.getY(), tick, Math.min(0.9f, 0.45f + alert.getDanger() * 0.45f));
-		currentTarget = new Vector2(alert.getX(), alert.getY());
+		currentTarget = alertTarget;
 		changeState(EnemyAiState.INVESTIGATE, context.playing(), "ally alert");
 		context.metrics().record(tick, enemy, "ALLY_ALERT_RECEIVED", state, 0, 0, "danger=" + alert.getDanger());
 	}
 
-	private void updateStateMachine(EnemyContext context, boolean playerSeen) {
+	private void updateStateMachine(EnemyContext context, boolean playerSeen, boolean playerContact) {
 		Player player = context.player();
+		boolean canEngage = canCurrentlyEngage(player, context.levelData());
+		updateLostEngageTicks(canEngage);
+
 		switch (state) {
 		case IDLE -> changeState(EnemyAiState.PATROL, context.playing(), "idle");
 		case PATROL -> {
-			if (playerSeen)
+			if (playerContact)
+				changeState(EnemyAiState.CHASE, context.playing(), "patrol contact");
+			else if (playerSeen)
 				changeState(EnemyAiState.ALERT, context.playing(), "patrol sees player");
 		}
 		case INVESTIGATE -> {
-			if (playerSeen)
+			if (playerContact)
+				changeState(EnemyAiState.CHASE, context.playing(), "investigate contact");
+			else if (playerSeen)
 				changeState(EnemyAiState.ALERT, context.playing(), "investigate sees player");
 			else if (isAtCurrentTarget())
 				changeState(EnemyAiState.SEARCH, context.playing(), "noise reached");
@@ -191,25 +233,27 @@ public class EnemyAiController {
 		}
 		case ALERT -> {
 			enemy.turnTowardsPlayer(player);
-			if (stateTick >= profile.getReactionDelayTicks())
+			if (!canEngage)
+				disengage(context.playing(), "alert lost sight");
+			else if (stateTick >= profile.getReactionDelayTicks())
 				changeState(EnemyAiState.CHASE, context.playing(), "reaction elapsed");
 		}
 		case CHASE -> {
-			if (profile.canRetreat() && enemy.getHealthPercent() < 0.22f)
+			if (!canEngage && lostEngageTicks >= LOST_SIGHT_DEAGGRO_TICKS)
+				disengage(context.playing(), "lost sight");
+			else if (profile.canRetreat() && enemy.getHealthPercent() < 0.22f)
 				changeState(EnemyAiState.RETREAT, context.playing(), "low health");
-			else if (isPlayerInAttackRange(player))
+			else if (canAttackPlayer(player, context.levelData()))
 				changeState(EnemyAiState.ATTACK, context.playing(), "attack range");
-			else if (!playerSeen && stateTick > 55 && memory.getConfidence() > 0.05f)
-				changeState(EnemyAiState.SEARCH, context.playing(), "lost visual");
-			else if (!playerSeen && memory.getConfidence() <= 0.05f)
-				changeState(EnemyAiState.RETURN_TO_PATROL, context.playing(), "memory expired");
 		}
 		case ATTACK -> {
-			if (profile.canRetreat() && enemy.getHealthPercent() < 0.14f)
+			if (!canEngage && lostEngageTicks >= LOST_SIGHT_DEAGGRO_TICKS)
+				disengage(context.playing(), "attack lost sight");
+			else if (profile.canRetreat() && enemy.getHealthPercent() < 0.14f)
 				changeState(EnemyAiState.RETREAT, context.playing(), "critical health");
 		}
 		case SEARCH -> {
-			if (playerSeen)
+			if (playerContact || playerSeen)
 				changeState(EnemyAiState.CHASE, context.playing(), "search found player");
 			else if (searchTick++ > 160 || memory.getConfidence() <= 0.03f) {
 				searchTick = 0;
@@ -240,7 +284,7 @@ public class EnemyAiController {
 					return BehaviorStatus.SUCCESS;
 				})));
 		root.add(new SequenceNode()
-				.add(new ConditionNode(ctx -> isPlayerInAttackRange(ctx.player())))
+				.add(new ConditionNode(ctx -> canAttackPlayer(ctx.player(), ctx.levelData())))
 				.add(new ActionNode(ctx -> {
 					selectedAction = EnemyAction.ATTACK;
 					changeState(EnemyAiState.ATTACK, ctx.playing(), "behavior attack");
@@ -298,8 +342,14 @@ public class EnemyAiController {
 		if (shouldUseNavigation())
 			if (followPath(lvlData, playing, target, speedMultiplier))
 				return;
+		if ((state == EnemyAiState.CHASE || state == EnemyAiState.INVESTIGATE) && !canWalkDirectlyToTarget(lvlData, target)) {
+			disengage(playing, "target unreachable");
+			return;
+		}
 		enemy.turnTowardsX(target.x());
-		enemy.aiMove(lvlData, speedMultiplier);
+		boolean moved = enemy.aiMove(lvlData, speedMultiplier);
+		if (!moved && (state == EnemyAiState.CHASE || state == EnemyAiState.INVESTIGATE))
+			disengage(playing, "movement blocked");
 	}
 
 	private boolean followPath(int[][] lvlData, Playing playing, Vector2 target, float speedMultiplier) {
@@ -369,12 +419,66 @@ public class EnemyAiController {
 		return currentTarget.distanceTo(enemy.getCenterX(), enemy.getCenterY()) < Game.TILES_SIZE * 0.55f;
 	}
 
+	private boolean canAttackPlayer(Player player, int[][] lvlData) {
+		return canCurrentlyEngage(player, lvlData) && isPlayerInAttackRange(player);
+	}
+
+	private boolean canCurrentlyEngage(Player player, int[][] lvlData) {
+		if (isTouchingPlayer(player))
+			return true;
+
+		if (!vision.hasLineOfSight())
+			return false;
+
+		return canWalkDirectlyToTarget(lvlData, new Vector2(player.getHitbox().x + player.getHitbox().width / 2f, player.getHitbox().y + player.getHitbox().height / 2f));
+	}
+
+	private boolean isTouchingPlayer(Player player) {
+		return enemy.getHitbox().intersects(player.getHitbox());
+	}
+
 	private boolean isPlayerInAttackRange(Player player) {
 		float px = player.getHitbox().x + player.getHitbox().width / 2f;
 		float py = player.getHitbox().y + player.getHitbox().height / 2f;
 		float dx = px - enemy.getCenterX();
 		float dy = py - enemy.getCenterY();
 		return Math.sqrt(dx * dx + dy * dy) <= enemy.getAttackDistance() * 1.25f && Math.abs(dy) < Game.TILES_SIZE * 1.1f;
+	}
+
+	private void updateLostEngageTicks(boolean canEngage) {
+		if (state != EnemyAiState.ALERT && state != EnemyAiState.CHASE && state != EnemyAiState.ATTACK) {
+			lostEngageTicks = 0;
+			return;
+		}
+
+		if (canEngage)
+			lostEngageTicks = 0;
+		else
+			lostEngageTicks++;
+	}
+
+	private boolean canWalkDirectlyToTarget(int[][] lvlData, Vector2 target) {
+		if (target == null)
+			return false;
+
+		int startX = (int) (enemy.getCenterX() / Game.TILES_SIZE);
+		int endX = (int) (target.x() / Game.TILES_SIZE);
+		int yTile = (int) ((enemy.getHitbox().y + enemy.getHitbox().height / 2f) / Game.TILES_SIZE);
+		int targetYTile = (int) (target.y() / Game.TILES_SIZE);
+		if (Math.abs(targetYTile - yTile) > 1)
+			return false;
+
+		return IsAllTilesWalkable(Math.min(startX, endX), Math.max(startX, endX) + 1, yTile, lvlData);
+	}
+
+	private void disengage(Playing playing, String details) {
+		currentTarget = null;
+		lastPathTarget = null;
+		lostEngageTicks = 0;
+		memory.reset();
+		pathFollower.reset();
+		selectedAction = EnemyAction.PATROL;
+		changeState(EnemyAiState.RETURN_TO_PATROL, playing, details);
 	}
 
 	private void callAllies(EnemyContext context, Vector2 position, float danger) {
@@ -425,6 +529,7 @@ public class EnemyAiController {
 		lastPathTarget = null;
 		lastNoiseTick = -100000;
 		lastAlertTick = -100000;
+		lostEngageTicks = 0;
 		memory.reset();
 		vision.reset();
 		pathFollower.reset();

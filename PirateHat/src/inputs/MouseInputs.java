@@ -31,7 +31,6 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
 		e = gamePanel.toGameMouseEvent(e);
 		switch (Gamestate.state) {
 		case MENU -> gamePanel.getGame().getMenu().mouseMoved(e);
-		case LEVEL_SELECT -> gamePanel.getGame().getLevelSelect().mouseMoved(e);
 		case WARDROBE -> gamePanel.getGame().getWardrobe().mouseMoved(e);
 		case PLAYING -> gamePanel.getGame().getPlaying().mouseMoved(e);
 		case OPTIONS -> gamePanel.getGame().getGameOptions().mouseMoved(e);
@@ -43,7 +42,6 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
 	public void mouseClicked(MouseEvent e) {
 		e = gamePanel.toGameMouseEvent(e);
 		switch (Gamestate.state) {
-		case LEVEL_SELECT -> gamePanel.getGame().getLevelSelect().mouseClicked(e);
 		case WARDROBE -> gamePanel.getGame().getWardrobe().mouseClicked(e);
 		case PLAYING -> gamePanel.getGame().getPlaying().mouseClicked(e);
 		}
@@ -57,7 +55,6 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
 
 		switch (Gamestate.state) {
 		case MENU -> gamePanel.getGame().getMenu().mousePressed(e);
-		case LEVEL_SELECT -> gamePanel.getGame().getLevelSelect().mousePressed(e);
 		case WARDROBE -> gamePanel.getGame().getWardrobe().mousePressed(e);
 		case PLAYING -> gamePanel.getGame().getPlaying().mousePressed(e);
 		case OPTIONS -> gamePanel.getGame().getGameOptions().mousePressed(e);
@@ -70,7 +67,6 @@ public class MouseInputs implements MouseListener, MouseMotionListener {
 		e = gamePanel.toGameMouseEvent(e);
 		switch (Gamestate.state) {
 		case MENU -> gamePanel.getGame().getMenu().mouseReleased(e);
-		case LEVEL_SELECT -> gamePanel.getGame().getLevelSelect().mouseReleased(e);
 		case WARDROBE -> gamePanel.getGame().getWardrobe().mouseReleased(e);
 		case PLAYING -> gamePanel.getGame().getPlaying().mouseReleased(e);
 		case OPTIONS -> gamePanel.getGame().getGameOptions().mouseReleased(e);

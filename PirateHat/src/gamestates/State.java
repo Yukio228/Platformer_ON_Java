@@ -25,7 +25,7 @@ public class State {
 	@SuppressWarnings("incomplete-switch")
 	public void setGamestate(Gamestate state) {
 		switch (state) {
-		case MENU, LEVEL_SELECT, WARDROBE -> game.getAudioPlayer().playSong(AudioPlayer.MENU_1);
+		case MENU, WARDROBE -> game.getAudioPlayer().playSong(AudioPlayer.MENU_1);
 		case PLAYING -> game.getAudioPlayer().setLevelSong(game.getPlaying().getLevelManager().getLevelIndex());
 		}
 

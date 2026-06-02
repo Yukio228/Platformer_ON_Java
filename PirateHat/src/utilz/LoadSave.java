@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -93,8 +94,12 @@ public class LoadSave {
 	public static BufferedImage[] GetAllLevels() {
 		File file = getLevelsDir();
 
-		if (file == null)
+		if (file == null) {
+			BufferedImage[] classpathLevels = getClasspathLevels();
+			if (classpathLevels.length > 0)
+				return classpathLevels;
 			throw new IllegalStateException("Could not load levels directory");
+		}
 
 		File[] files = file.listFiles((dir, name) -> isNumberedLevelPng(name));
 		if (files == null || files.length == 0)
@@ -113,6 +118,26 @@ public class LoadSave {
 			}
 
 		return imgs;
+	}
+
+	private static BufferedImage[] getClasspathLevels() {
+		ArrayList<BufferedImage> imgs = new ArrayList<>();
+
+		for (int level = 1;; level++) {
+			try (InputStream is = LoadSave.class.getResourceAsStream("/lvls/" + level + ".png")) {
+				if (is == null)
+					break;
+				BufferedImage img = ImageIO.read(is);
+				if (img == null)
+					break;
+				imgs.add(img);
+			} catch (IOException e) {
+				e.printStackTrace();
+				break;
+			}
+		}
+
+		return imgs.toArray(new BufferedImage[0]);
 	}
 
 	private static File getLevelsDir() {

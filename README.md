@@ -1,79 +1,56 @@
 # Pirate Hat
 
-## Описание игры
+Pirate Hat is a 2D Java platformer with Swing-based rendering, level PNG data,
+player movement, enemies, traps, pickups, menus, audio, and enemy AI systems.
 
-Pirate Hat - 2D-платформер про прохождение пиратских уровней с ловушками, контейнерами, зельями, несколькими типами противников и боссом. Дипломная доработка фокусируется на игровой системе ИИ противников: враги воспринимают игрока через зрение и слух, запоминают последнюю информацию, выбирают действия, строят маршруты по платформам и обмениваются тревогами.
+## Project Structure
 
-## Запуск
-
-Проект использует обычный Java/Swing-цикл без внешних зависимостей.
-
-```powershell
-$src = Get-ChildItem -Path PirateHat\src -Recurse -Filter *.java | ForEach-Object { $_.FullName }
-javac -encoding UTF-8 -d out\PirateHat $src
-Copy-Item -Path PirateHat\res\* -Destination out\PirateHat -Recurse -Force
-java -cp out\PirateHat main.MainClass
+```text
+Platformer_ON_Java/
+|-- PirateHat/
+|   |-- src/    # Java source code
+|   `-- res/    # Game resources: sprites, audio, UI images, level PNG files
+|-- Treasure Hunters all assets/  # Source asset library for future development
+|-- .gitignore
+`-- README.md
 ```
 
-В IntelliJ IDEA откройте модуль `PirateHat.iml` или корневой проект и запустите `main.MainClass`.
+Useful paths:
 
-## Управление
+- Source code: `PirateHat/src/`
+- Game resources: `PirateHat/res/`
+- Backup/source asset library: `Treasure Hunters all assets/`
+- Main class: `main.MainClass`
 
-- `A` / `Left` - движение влево.
-- `D` / `Right` - движение вправо.
-- `W` / `Up` / `Space` - прыжок.
-- Левая кнопка мыши - обычная атака.
-- Правая кнопка мыши - силовая атака.
-- `Q` - использовать красное зелье.
-- `I` - инвентарь.
-- `Esc` - пауза или выход из инвентаря.
-- `7` на экране выбора уровней - прямой запуск AI demo arena.
+The `Treasure Hunters all assets/` directory is intentionally kept in the
+repository as a source asset library for future development.
 
-## Структура проекта
+## Run In IntelliJ IDEA
 
-- `PirateHat/src/main` - окно, панель и главный игровой цикл.
-- `PirateHat/src/gamestates` - состояния меню, выбора уровней и игры.
-- `PirateHat/src/entities` - игрок, враги и менеджер врагов.
-- `PirateHat/src/levels` - загрузка уровней из PNG и данные уровня.
-- `PirateHat/src/objects` - ловушки, зелья, контейнеры, чекпоинты и снаряды.
-- `PirateHat/src/ai` - подсистемы ИИ противников.
-- `PirateHat/res` - спрайты, аудио и PNG-карты уровней.
+1. Open the repository root in IntelliJ IDEA.
+2. Configure a Java SDK for the project.
+3. Mark `PirateHat/src/` as Sources Root if IntelliJ does not detect it
+   automatically.
+4. Mark `PirateHat/res/` as Resources Root if resource loading needs it.
+5. Run `main.MainClass`.
 
-## Система ИИ противников
+The project does not require external libraries for compilation.
 
-ИИ вынесен в пакет `ai` и подключен к обновлению врагов в игровом цикле. Основные элементы:
+## Controls
 
-- конечный автомат состояний `EnemyAiState`;
-- профили поведения `EnemyAiProfile` для разных типов врагов;
-- зрение с углом обзора, дистанцией, подозрением и блокировкой стенами;
-- событийный слух через `NoiseManager`;
-- память врага с координатами X/Y и убывающей достоверностью;
-- навигационный граф уровня и A* для платформенного перемещения;
-- Behavior Tree и Utility AI для выбора тактики;
-- тревоги союзникам через `AlertManager` и `SharedBlackboard`;
-- фазы босса `KingPigBoss`;
-- адаптивная сложность на основе статистики игрока;
-- сбор метрик и экспорт в `logs/ai_metrics.csv`.
+These controls are determined from the current source code:
 
-## Клавиши отладочного режима
+- `A` / `Left`: move left
+- `D` / `Right`: move right
+- `W` / `Up` / `Space`: jump
+- Left mouse button: normal attack
+- Right mouse button: power attack
+- `Q`: use red potion
+- `I`: inventory
+- `Esc`: pause or close inventory
+- `F3`..`F7`: AI debug and metrics tools
 
-- `F3` - общая отладка ИИ: состояние, действие, подозрение, память и цель над врагами.
-- `F4` - навигационный граф и текущие маршруты.
-- `F5` - активные шумовые события.
-- `F6` - тревоги между врагами.
-- `F7` - экспорт метрик ИИ в CSV.
+## Assets
 
-## Тестовые сценарии
-
-1. Игрок проходит перед врагом: враг повышает подозрение и переходит в `ALERT/CHASE`.
-2. Игрок атакует за стеной: враг слышит шум, но получает только координату шума и идет в `INVESTIGATE`.
-3. Игрок уходит на другую платформу: `PirateMob` строит маршрут A*.
-4. Игрок скрывается: враг идет к последней известной позиции и затем ищет.
-5. Враг не находит игрока: состояние возвращается в `RETURN_TO_PATROL/PATROL`.
-6. Командир замечает игрока: союзники получают тревогу и исследуют район.
-7. Низкое здоровье врага: враг выбирает `RETREAT`, если профиль разрешает отступление.
-8. Босс теряет здоровье до 60% и 30%: переключаются фазы и параметры поведения.
-9. Нажат `F3`: отображается отладочная информация над противниками.
-10. Нажат `F7`: создается `logs/ai_metrics.csv`.
-
-Демонстрационный уровень находится в `PirateHat/res/lvls/7.png`. Его можно открыть через экран выбора уровней клавишей `7`, даже если обычный прогресс сохранения еще не дошел до седьмой карты.
+TODO: specify source and usage terms for external assets before publishing the
+final version.

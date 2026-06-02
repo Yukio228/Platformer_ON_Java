@@ -10,7 +10,7 @@ import main.Game;
 public class NoiseManager {
 	private final ArrayList<NoiseEvent> events = new ArrayList<>();
 
-	public void update() {
+	public synchronized void update() {
 		Iterator<NoiseEvent> iterator = events.iterator();
 		while (iterator.hasNext()) {
 			NoiseEvent event = iterator.next();
@@ -20,7 +20,7 @@ public class NoiseManager {
 		}
 	}
 
-	public void addNoise(NoiseType type, float x, float y, float radius, float intensity, int durationTicks) {
+	public synchronized void addNoise(NoiseType type, float x, float y, float radius, float intensity, int durationTicks) {
 		events.add(new NoiseEvent(type, x, y, radius, intensity, durationTicks));
 	}
 
@@ -38,7 +38,7 @@ public class NoiseManager {
 		}
 	}
 
-	public NoiseEvent findNearestAudibleNoise(float listenerX, float listenerY, float hearingMultiplier) {
+	public synchronized NoiseEvent findNearestAudibleNoise(float listenerX, float listenerY, float hearingMultiplier) {
 		NoiseEvent nearest = null;
 		float nearestDist = Float.MAX_VALUE;
 		for (NoiseEvent event : events) {
@@ -55,11 +55,11 @@ public class NoiseManager {
 		return nearest;
 	}
 
-	public List<NoiseEvent> getEvents() {
-		return Collections.unmodifiableList(events);
+	public synchronized List<NoiseEvent> getEvents() {
+		return Collections.unmodifiableList(new ArrayList<>(events));
 	}
 
-	public void clear() {
+	public synchronized void clear() {
 		events.clear();
 	}
 }

@@ -1,11 +1,40 @@
+# IntelliJ IDEA
 .idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Build output
 out/
-logs/
-PirateHat/.idea/
-PirateHat/out/
-.DS_Store
+build/
+target/
+bin/
+dist/
 *.class
+
+# Temporary files
+*.log
 *.tmp
 *.bak
 *.swp
+tmp/
+logs/
+hs_err_pid*
+replay_pid*
+
+# OS files
+.DS_Store
+Thumbs.db
+*~.nib
+
+# Eclipse and local IDE metadata
+.metadata/
+.settings/
+.loadpath
+.recommenders/
+.project
+.classpath
+
+# Local configuration
 local.properties

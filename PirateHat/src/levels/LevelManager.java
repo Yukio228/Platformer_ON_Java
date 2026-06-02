@@ -89,6 +89,10 @@ public class LevelManager {
 		return levels.get(lvlIndex);
 	}
 
+	public Level getLevel(int index) {
+		return levels.get(index);
+	}
+
 	public int getAmountOfLevels() {
 		return levels.size();
 	}
@@ -98,6 +102,6 @@ public class LevelManager {
 	}
 
 	public void setLevelIndex(int lvlIndex) {
-		this.lvlIndex = lvlIndex;
+		this.lvlIndex = Math.max(0, Math.min(levels.size() - 1, lvlIndex));
 	}
 }

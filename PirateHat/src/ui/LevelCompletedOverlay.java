@@ -25,11 +25,14 @@ public class LevelCompletedOverlay {
 	}
 
 	private void initButtons() {
-		int menuX = (int) (330 * Game.SCALE);
-		int nextX = (int) (445 * Game.SCALE);
-		int y = (int) (195 * Game.SCALE);
-		next = new UrmButton(nextX, y, URM_SIZE, URM_SIZE, 0);
-		menu = new UrmButton(menuX, y, URM_SIZE, URM_SIZE, 2);
+		int centerX = bgX + bgW / 2;
+		int buttonGap = (int) (59 * Game.SCALE);
+		int totalW = 2 * URM_SIZE + buttonGap;
+		int startX = centerX - totalW / 2;
+		int y = bgY + (int) (120 * Game.SCALE);
+
+		menu = new UrmButton(startX, y, URM_SIZE, URM_SIZE, 2);
+		next = new UrmButton(startX + URM_SIZE + buttonGap, y, URM_SIZE, URM_SIZE, 0);
 	}
 
 	private void initImg() {
