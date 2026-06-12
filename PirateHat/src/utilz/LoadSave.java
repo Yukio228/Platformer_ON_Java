@@ -123,7 +123,8 @@ public class LoadSave {
 	private static BufferedImage[] getClasspathLevels() {
 		ArrayList<BufferedImage> imgs = new ArrayList<>();
 
-		for (int level = 1;; level++) {
+		int level = hasClasspathLevelZero() ? 0 : 1;
+		for (;; level++) {
 			try (InputStream is = LoadSave.class.getResourceAsStream("/lvls/" + level + ".png")) {
 				if (is == null)
 					break;
@@ -138,6 +139,14 @@ public class LoadSave {
 		}
 
 		return imgs.toArray(new BufferedImage[0]);
+	}
+
+	private static boolean hasClasspathLevelZero() {
+		try (InputStream is = LoadSave.class.getResourceAsStream("/lvls/0.png")) {
+			return is != null;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 
 	private static File getLevelsDir() {
@@ -183,8 +192,10 @@ public class LoadSave {
 	}
 
 	private static void validateLevelFiles(File[] files, File dir) {
+		int firstLevel = getLevelNumber(files[0].getName());
+		int expectedStart = firstLevel == 0 ? 0 : 1;
 		for (int i = 0; i < files.length; i++) {
-			int expectedLevel = i + 1;
+			int expectedLevel = expectedStart + i;
 			int actualLevel = getLevelNumber(files[i].getName());
 			if (actualLevel != expectedLevel)
 				throw new IllegalStateException("Missing level " + expectedLevel + ".png in " + dir.getAbsolutePath());

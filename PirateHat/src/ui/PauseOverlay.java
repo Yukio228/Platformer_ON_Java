@@ -98,8 +98,9 @@ public class PauseOverlay {
 		} else if (isIn(e, unpauseB)) {
 			if (unpauseB.isMousePressed())
 				playing.unpauseGame();
-		} else
-			audioOptions.mouseReleased(e);
+		}
+
+		audioOptions.mouseReleased(e);
 
 		menuB.resetBools();
 		replayB.resetBools();
@@ -111,6 +112,7 @@ public class PauseOverlay {
 		menuB.setMouseOver(false);
 		replayB.setMouseOver(false);
 		unpauseB.setMouseOver(false);
+		audioOptions.mouseMoved(e);
 
 		if (isIn(e, menuB))
 			menuB.setMouseOver(true);
@@ -118,8 +120,6 @@ public class PauseOverlay {
 			replayB.setMouseOver(true);
 		else if (isIn(e, unpauseB))
 			unpauseB.setMouseOver(true);
-		else
-			audioOptions.mouseMoved(e);
 	}
 
 	private boolean isIn(MouseEvent e, PauseButton b) {

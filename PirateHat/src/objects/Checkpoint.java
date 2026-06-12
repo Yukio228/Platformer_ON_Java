@@ -43,6 +43,13 @@ public class Checkpoint extends GameObject {
 		return activated;
 	}
 
+	public void restoreActivated() {
+		activated = true;
+		captureAnimation = false;
+		aniTick = 0;
+		aniIndex = CAPTURE_FRAMES.length - 1;
+	}
+
 	public Point getRespawnPoint() {
 		return new Point(x, y);
 	}

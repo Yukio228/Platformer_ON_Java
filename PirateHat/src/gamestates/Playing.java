@@ -21,6 +21,7 @@ import java.nio.file.Path;
 import java.util.Random;
 import java.util.ArrayList;
 
+import database.SaveManager;
 import entities.EnemyManager;
 import entities.Player;
 import entities.PlayerInventory;
@@ -29,9 +30,11 @@ import main.Game;
 import objects.ObjectManager;
 import ui.GameCompletedOverlay;
 import ui.GameOverOverlay;
+import ui.GoldPickupNotification;
 import ui.InventoryUI;
 import ui.LevelCompletedOverlay;
 import ui.PauseOverlay;
+import tutorial.TutorialManager;
 import utilz.LoadSave;
 import effects.DialogueEffect;
 import effects.Rain;
@@ -50,6 +53,7 @@ public class Playing extends State implements Statemethods {
 	private GameCompletedOverlay gameCompletedOverlay;
 	private LevelCompletedOverlay levelCompletedOverlay;
 	private InventoryUI inventoryUI;
+	private GoldPickupNotification goldNotification;
 	private Rain rain;
 	private NoiseManager noiseManager;
 	private AlertManager alertManager;
@@ -58,6 +62,7 @@ public class Playing extends State implements Statemethods {
 	private DifficultyDirector difficultyDirector;
 	private AiMetricsCollector aiMetricsCollector;
 	private AiDebugRenderer aiDebugRenderer;
+	private TutorialManager tutorialManager;
 	private int aiTick;
 
 	private boolean paused = false;
@@ -130,7 +135,8 @@ public class Playing extends State implements Statemethods {
 		for (int i = 0; i < 10; i++)
 			dialogEffects.add(new DialogueEffect(0, 0, QUESTION));
 
-		deactivateDialogueEffects();
+		for (DialogueEffect de : dialogEffects)
+			de.deactive();
 	}
 
 	private void loadDialogueImgs() {
@@ -150,7 +156,8 @@ public class Playing extends State implements Statemethods {
 		levelManager.loadNextLevel();
 		player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
 		resetAll();
-		drawShip = false;
+		drawShip = shouldDrawShipForLevel(levelManager.getLevelIndex());
+		saveSession();
 	}
 
 	public void startLevel(int levelIndex) {
@@ -158,13 +165,38 @@ public class Playing extends State implements Statemethods {
 		levelManager.loadNextLevel();
 		player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
 		resetAll();
-		drawShip = levelIndex == 0;
+		drawShip = shouldDrawShipForLevel(levelIndex);
 		gameCompleted = false;
+		saveSession();
+	}
+
+	public void loadSavedSession() {
+		SaveManager.SessionData session = game.getSaveManager().getSession(levelManager.getAmountOfLevels());
+		if (session == null) {
+			saveSession();
+			return;
+		}
+
+		levelManager.setLevelIndex(session.levelIndex);
+		levelManager.loadNextLevel();
+		player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
+		resetAll();
+		drawShip = shouldDrawShipForLevel(levelManager.getLevelIndex());
+		gameCompleted = false;
+
+		player.restoreSession(session.playerX, session.playerY, session.respawnX, session.respawnY, session.playerHealth, session.playerPower, session.inventoryCounts);
+		enemyManager.restoreEnemyState(session.enemyActiveState, session.enemyHealthState);
+		objectManager.restoreSessionState(session.potionActiveState, session.containerActiveState, player.getRespawnPoint());
+		checkCloseToBorder();
 	}
 
 	private void loadStartLevel() {
 		enemyManager.loadEnemies(levelManager.getCurrentLevel());
 		objectManager.loadObjects(levelManager.getCurrentLevel());
+	}
+
+	private boolean shouldDrawShipForLevel(int levelIndex) {
+		return levelIndex == 1;
 	}
 
 	private void calcLvlOffset() {
@@ -192,6 +224,8 @@ public class Playing extends State implements Statemethods {
 		levelCompletedOverlay = new LevelCompletedOverlay(this);
 		gameCompletedOverlay = new GameCompletedOverlay(this);
 		inventoryUI = new InventoryUI();
+		goldNotification = new GoldPickupNotification();
+		tutorialManager = new TutorialManager(this);
 
 		rain = new Rain();
 	}
@@ -225,6 +259,8 @@ public class Playing extends State implements Statemethods {
 			difficultyDirector.update(aiMetricsCollector, aiTick);
 			enemyManager.update(levelManager.getCurrentLevel().getLevelData());
 			checkCloseToBorder();
+			tutorialManager.update();
+			goldNotification.update();
 			if (drawShip)
 				updateShipAni();
 		}
@@ -303,14 +339,18 @@ public class Playing extends State implements Statemethods {
 		if (drawShip)
 			g.drawImage(shipImgs[shipAni], (int) (100 * Game.SCALE) - xLvlOffset, (int) ((288 * Game.SCALE) + shipHeightDelta), (int) (78 * Game.SCALE), (int) (72 * Game.SCALE), null);
 
+		objectManager.drawBackgroundTrees(g, xLvlOffset);
 		levelManager.draw(g, xLvlOffset);
 		objectManager.draw(g, xLvlOffset);
 		enemyManager.draw(g, xLvlOffset);
 		player.render(g, xLvlOffset);
-		objectManager.drawBackgroundTrees(g, xLvlOffset);
 		drawDialogue(g, xLvlOffset);
 		aiDebugRenderer.draw(g, this, xLvlOffset);
 		inventoryUI.drawHotbar(g, player.getInventory());
+		if (!paused && !gameOver && !lvlCompleted && !gameCompleted && !inventoryOpen) {
+			goldNotification.draw(g);
+			tutorialManager.draw(g);
+		}
 
 		if (paused) {
 			g.setColor(new Color(0, 0, 0, 150));
@@ -362,6 +402,8 @@ public class Playing extends State implements Statemethods {
 		performanceTracker.resetForLevel();
 		deactivateDialogueEffects();
 		inventoryOpen = false;
+		goldNotification.clear();
+		tutorialManager.resetForLevel(levelManager.getLevelIndex());
 	}
 
 	public void respawnPlayer() {
@@ -377,6 +419,7 @@ public class Playing extends State implements Statemethods {
 		alertManager.clear();
 		sharedBlackboard.clear();
 		deactivateDialogueEffects();
+		goldNotification.clear();
 	}
 
 	private void setDrawRainBoolean() {
@@ -387,8 +430,10 @@ public class Playing extends State implements Statemethods {
 
 	public void setGameOver(boolean gameOver) {
 		this.gameOver = gameOver;
-		if (gameOver)
+		if (gameOver) {
 			playerDying = false;
+			clearAiRuntimeState();
+		}
 	}
 
 	public void checkObjectHit(Rectangle2D.Float attackBox) {
@@ -403,9 +448,17 @@ public class Playing extends State implements Statemethods {
 		objectManager.checkObjectTouched(hitbox);
 	}
 
+	public void collectGold(int amount) {
+		if (game.getSaveManager().addGold(amount)) {
+			goldNotification.addGold(amount);
+			saveSession();
+		}
+	}
+
 	public void activateCheckpoint(Point checkpointSpawn) {
 		player.setRespawn(checkpointSpawn);
 		addDialogue(checkpointSpawn.x, checkpointSpawn.y, EXCLAMATION);
+		saveSession();
 	}
 
 	public void checkSpikesTouched(Player p) {
@@ -429,10 +482,11 @@ public class Playing extends State implements Statemethods {
 				return;
 
 		if (!gameOver) {
-			if (e.getButton() == MouseEvent.BUTTON1)
+			if (e.getButton() == MouseEvent.BUTTON1) {
 				player.setAttacking(true);
-			else if (e.getButton() == MouseEvent.BUTTON3)
-				player.powerAttack();
+				tutorialManager.recordBasicAttack();
+			} else if (e.getButton() == MouseEvent.BUTTON3 && player.powerAttack())
+				tutorialManager.recordPowerAttack();
 		}
 	}
 
@@ -489,8 +543,10 @@ public class Playing extends State implements Statemethods {
 				exportAiMetrics();
 				break;
 			case KeyEvent.VK_Q:
-				player.getInventory().useRedPotion(player);
-				performanceTracker.recordHealingUsed();
+				if (player.getInventory().useRedPotion(player)) {
+					performanceTracker.recordHealingUsed();
+					tutorialManager.recordRedPotionUsed();
+				}
 				break;
 			case KeyEvent.VK_A, KeyEvent.VK_LEFT:
 				player.setLeft(true);
@@ -583,12 +639,12 @@ public class Playing extends State implements Statemethods {
 	private void useInventoryItem(int itemType) {
 		switch (itemType) {
 		case PlayerInventory.RED_POTION -> {
-			player.getInventory().useRedPotion(player);
-			performanceTracker.recordHealingUsed();
+			if (player.getInventory().useRedPotion(player))
+				performanceTracker.recordHealingUsed();
 		}
 		case PlayerInventory.BLUE_POTION -> {
-			player.getInventory().useBluePotion(player);
-			performanceTracker.recordHealingUsed();
+			if (player.getInventory().useBluePotion(player))
+				performanceTracker.recordHealingUsed();
 		}
 		}
 	}
@@ -602,10 +658,52 @@ public class Playing extends State implements Statemethods {
 			gameCompletedOverlay.reset();
 			levelManager.setLevelIndex(0);
 			levelManager.loadNextLevel();
+			player.setSpawn(levelManager.getCurrentLevel().getPlayerSpawn());
 			resetAll();
+			saveSession();
 			return;
 		}
+		saveNextLevelStart(levelManager.getLevelIndex() + 1);
 		this.lvlCompleted = levelCompleted;
+	}
+
+	public void saveSession() {
+		if (levelManager == null || player == null)
+			return;
+
+		SaveManager.SessionData session = new SaveManager.SessionData();
+		Point respawn = player.getRespawnPoint();
+		boolean shouldRespawnOnLoad = gameOver || playerDying || player.getCurrentHealth() <= 0;
+
+		session.levelIndex = levelManager.getLevelIndex();
+		session.playerX = shouldRespawnOnLoad ? respawn.x : player.getWorldX();
+		session.playerY = shouldRespawnOnLoad ? respawn.y : player.getWorldY();
+		session.respawnX = respawn.x;
+		session.respawnY = respawn.y;
+		session.playerHealth = shouldRespawnOnLoad ? player.getMaxHealth() : player.getCurrentHealth();
+		session.playerPower = player.getPowerValue();
+		session.inventoryCounts = player.getInventory().getCountsCopy();
+		session.enemyActiveState = enemyManager.getEnemyActiveState();
+		session.enemyHealthState = enemyManager.getEnemyHealthState();
+		session.potionActiveState = objectManager.getPotionActiveState();
+		session.containerActiveState = objectManager.getContainerActiveState();
+
+		game.getSaveManager().saveSession(session, levelManager.getAmountOfLevels());
+	}
+
+	private void saveNextLevelStart(int nextLevelIndex) {
+		Point spawn = levelManager.getLevel(nextLevelIndex).getPlayerSpawn();
+		SaveManager.SessionData session = new SaveManager.SessionData();
+		session.levelIndex = nextLevelIndex;
+		session.playerX = spawn.x;
+		session.playerY = spawn.y;
+		session.respawnX = spawn.x;
+		session.respawnY = spawn.y;
+		session.playerHealth = player.getMaxHealth();
+		session.playerPower = player.getPowerValue();
+		session.inventoryCounts = player.getInventory().getCountsCopy();
+
+		game.getSaveManager().saveSession(session, levelManager.getAmountOfLevels());
 	}
 
 	public void setMaxLvlOffset(int lvlOffset) {
@@ -638,6 +736,19 @@ public class Playing extends State implements Statemethods {
 
 	public void setPlayerDying(boolean playerDying) {
 		this.playerDying = playerDying;
+		if (playerDying)
+			clearAiRuntimeState();
+	}
+
+	private void clearAiRuntimeState() {
+		if (enemyManager != null)
+			enemyManager.resetAllEnemyAiState();
+		if (noiseManager != null)
+			noiseManager.clear();
+		if (alertManager != null)
+			alertManager.clear();
+		if (sharedBlackboard != null)
+			sharedBlackboard.clear();
 	}
 
 	public void emitPlayerNoise(NoiseType type, float x, float y) {
@@ -654,6 +765,10 @@ public class Playing extends State implements Statemethods {
 
 	public void recordPlayerDeath() {
 		performanceTracker.recordDeath();
+	}
+
+	public void recordTutorialJump() {
+		tutorialManager.recordJump();
 	}
 
 	private void exportAiMetrics() {

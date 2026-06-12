@@ -17,7 +17,8 @@ public class InventoryUI {
 	private BufferedImage slotImg;
 	private BufferedImage panelImg;
 	private BufferedImage[] itemImgs = new BufferedImage[PlayerInventory.ITEM_AMOUNT];
-	private String[] itemNames = { "HEALTH", "POWER", "GOLD", "SILVER", "KEY" };
+	private static final int[] VISIBLE_ITEMS = { PlayerInventory.RED_POTION, PlayerInventory.BLUE_POTION, PlayerInventory.KEY };
+	private static final String[] VISIBLE_ITEM_NAMES = { "HEALTH", "POWER", "KEY" };
 	private int mouseOverItem = -1;
 
 	public InventoryUI() {
@@ -25,16 +26,11 @@ public class InventoryUI {
 	}
 
 	public void drawHotbar(Graphics g, PlayerInventory inventory) {
-		int slotW = (int) (27 * Game.SCALE);
-		int slotH = (int) (30 * Game.SCALE);
-		int gap = (int) (4 * Game.SCALE);
-		int startX = Game.GAME_WIDTH - (slotW + gap) * PlayerInventory.ITEM_AMOUNT - (int) (12 * Game.SCALE);
-		int y = (int) (12 * Game.SCALE);
-
-		for (int i = 0; i < PlayerInventory.ITEM_AMOUNT; i++) {
+		for (int i = 0; i < VISIBLE_ITEMS.length; i++) {
+			int itemType = VISIBLE_ITEMS[i];
 			Rectangle bounds = getHotbarSlotBounds(i);
-			drawSlot(g, inventory, i, bounds.x, bounds.y, bounds.width, bounds.height, false, mouseOverItem == i);
-			drawHotkey(g, i, bounds);
+			drawSlot(g, inventory, itemType, bounds.x, bounds.y, bounds.width, bounds.height, false, null, mouseOverItem == itemType);
+			drawHotkey(g, itemType, bounds);
 		}
 	}
 
@@ -52,23 +48,17 @@ public class InventoryUI {
 		g.setFont(new Font("Arial", Font.BOLD, (int) (16 * Game.SCALE)));
 		drawCenteredText(g, "INVENTORY", panelX, panelY + (int) (26 * Game.SCALE), panelW, Color.WHITE);
 
-		int slotW = (int) (38 * Game.SCALE);
-		int slotH = (int) (42 * Game.SCALE);
-		int startX = panelX + (int) (38 * Game.SCALE);
-		int startY = panelY + (int) (48 * Game.SCALE);
-		int gapX = (int) (52 * Game.SCALE);
-		int gapY = (int) (46 * Game.SCALE);
-
 		g.setFont(new Font("Arial", Font.BOLD, (int) (9 * Game.SCALE)));
-		for (int i = 0; i < PlayerInventory.ITEM_AMOUNT; i++) {
+		for (int i = 0; i < VISIBLE_ITEMS.length; i++) {
+			int itemType = VISIBLE_ITEMS[i];
 			Rectangle bounds = getOverlaySlotBounds(i);
-			drawSlot(g, inventory, i, bounds.x, bounds.y, bounds.width, bounds.height, true, mouseOverItem == i);
+			drawSlot(g, inventory, itemType, bounds.x, bounds.y, bounds.width, bounds.height, true, VISIBLE_ITEM_NAMES[i], mouseOverItem == itemType);
 		}
 
 		g.setFont(oldFont);
 	}
 
-	private void drawSlot(Graphics g, PlayerInventory inventory, int itemType, int x, int y, int w, int h, boolean drawName, boolean mouseOver) {
+	private void drawSlot(Graphics g, PlayerInventory inventory, int itemType, int x, int y, int w, int h, boolean drawName, String itemName, boolean mouseOver) {
 		g.drawImage(slotImg, x, y, w, h, null);
 		if (mouseOver)
 			drawMouseOver(g, x, y, w, h, inventory.getCount(itemType) > 0);
@@ -82,7 +72,7 @@ public class InventoryUI {
 		drawCount(g, inventory.getCount(itemType), x, y, w, h);
 
 		if (drawName)
-			drawCenteredText(g, itemNames[itemType], x, y + h + (int) (9 * Game.SCALE), w, new Color(255, 235, 170));
+			drawCenteredText(g, itemName, x, y + h + (int) (9 * Game.SCALE), w, new Color(255, 235, 170));
 	}
 
 	private void drawMouseOver(Graphics g, int x, int y, int w, int h, boolean hasItem) {
@@ -137,8 +127,6 @@ public class InventoryUI {
 		itemImgs[PlayerInventory.RED_POTION] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_RED_POTION);
 		itemImgs[PlayerInventory.BLUE_POTION] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_BLUE_POTION);
 		itemImgs[PlayerInventory.KEY] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_KEY);
-		itemImgs[PlayerInventory.GOLD_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_GOLD_COIN);
-		itemImgs[PlayerInventory.SILVER_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_SILVER_COIN);
 	}
 
 	public void mouseMoved(MouseEvent e, boolean overlayOpen) {
@@ -154,29 +142,29 @@ public class InventoryUI {
 	}
 
 	private int getHotbarItemAt(int mouseX, int mouseY) {
-		for (int i = 0; i < PlayerInventory.ITEM_AMOUNT; i++)
+		for (int i = 0; i < VISIBLE_ITEMS.length; i++)
 			if (getHotbarSlotBounds(i).contains(mouseX, mouseY))
-				return i;
+				return VISIBLE_ITEMS[i];
 		return -1;
 	}
 
 	private int getOverlayItemAt(int mouseX, int mouseY) {
-		for (int i = 0; i < PlayerInventory.ITEM_AMOUNT; i++)
+		for (int i = 0; i < VISIBLE_ITEMS.length; i++)
 			if (getOverlaySlotBounds(i).contains(mouseX, mouseY))
-				return i;
+				return VISIBLE_ITEMS[i];
 		return -1;
 	}
 
-	private Rectangle getHotbarSlotBounds(int itemType) {
+	private Rectangle getHotbarSlotBounds(int index) {
 		int slotW = (int) (27 * Game.SCALE);
 		int slotH = (int) (30 * Game.SCALE);
 		int gap = (int) (4 * Game.SCALE);
-		int startX = Game.GAME_WIDTH - (slotW + gap) * PlayerInventory.ITEM_AMOUNT - (int) (12 * Game.SCALE);
+		int startX = Game.GAME_WIDTH - (slotW + gap) * VISIBLE_ITEMS.length - (int) (12 * Game.SCALE);
 		int y = (int) (12 * Game.SCALE);
-		return new Rectangle(startX + itemType * (slotW + gap), y, slotW, slotH);
+		return new Rectangle(startX + index * (slotW + gap), y, slotW, slotH);
 	}
 
-	private Rectangle getOverlaySlotBounds(int itemType) {
+	private Rectangle getOverlaySlotBounds(int index) {
 		int panelW = (int) (270 * Game.SCALE);
 		int panelH = (int) (165 * Game.SCALE);
 		int panelX = Game.GAME_WIDTH / 2 - panelW / 2;
@@ -187,8 +175,8 @@ public class InventoryUI {
 		int startY = panelY + (int) (48 * Game.SCALE);
 		int gapX = (int) (52 * Game.SCALE);
 		int gapY = (int) (46 * Game.SCALE);
-		int col = itemType % 3;
-		int row = itemType / 3;
+		int col = index % 3;
+		int row = index / 3;
 		return new Rectangle(startX + col * gapX, startY + row * gapY, slotW, slotH);
 	}
 }

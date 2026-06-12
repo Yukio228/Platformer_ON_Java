@@ -1,6 +1,7 @@
 package objects;
 
 import java.awt.Graphics;
+import java.awt.Point;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -62,7 +63,10 @@ public class ObjectManager {
 		for (InventoryPickup pickup : inventoryPickups)
 			if (pickup.isActive() && hitbox.intersects(pickup.getHitbox())) {
 				pickup.setActive(false);
-				playing.getPlayer().getInventory().addItem(pickup.getItemType(), 1);
+				if (pickup.getItemType() == PlayerInventory.GOLD_COIN)
+					playing.collectGold(PlayerInventory.GOLD_COIN_VALUE);
+				else if (pickup.getItemType() != PlayerInventory.SILVER_COIN)
+					playing.getPlayer().getInventory().addItem(pickup.getItemType(), 1);
 			}
 	}
 
@@ -105,7 +109,7 @@ public class ObjectManager {
 				inventoryPickups.add(new InventoryPickup(centerX + (int) (12 * Game.SCALE), topY - (int) (10 * Game.SCALE), PlayerInventory.KEY));
 		} else {
 			potions.add(new Potion(centerX, topY, RED_POTION));
-			inventoryPickups.add(new InventoryPickup(centerX - (int) (12 * Game.SCALE), topY - (int) (10 * Game.SCALE), PlayerInventory.SILVER_COIN));
+			inventoryPickups.add(new InventoryPickup(centerX - (int) (12 * Game.SCALE), topY - (int) (10 * Game.SCALE), PlayerInventory.GOLD_COIN));
 		}
 	}
 
@@ -129,7 +133,6 @@ public class ObjectManager {
 		inventoryItemImgs[PlayerInventory.RED_POTION] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_RED_POTION);
 		inventoryItemImgs[PlayerInventory.BLUE_POTION] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_BLUE_POTION);
 		inventoryItemImgs[PlayerInventory.GOLD_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_GOLD_COIN);
-		inventoryItemImgs[PlayerInventory.SILVER_COIN] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_SILVER_COIN);
 		inventoryItemImgs[PlayerInventory.KEY] = LoadSave.GetSpriteAtlas(LoadSave.ITEM_KEY);
 
 		BufferedImage containerSprite = LoadSave.GetSpriteAtlas(LoadSave.CONTAINER_ATLAS);
@@ -284,6 +287,8 @@ public class ObjectManager {
 		int iconSize = (int) (18 * Game.SCALE);
 		for (InventoryPickup pickup : inventoryPickups)
 			if (pickup.isActive()) {
+				if (pickup.getItemType() < 0 || pickup.getItemType() >= inventoryItemImgs.length || inventoryItemImgs[pickup.getItemType()] == null)
+					continue;
 				int x = (int) (pickup.getHitbox().x + pickup.getHitbox().width / 2 - iconSize / 2 - xLvlOffset);
 				int y = (int) (pickup.getHitbox().y + pickup.getHitbox().height / 2 - iconSize / 2);
 				g.drawImage(inventoryItemImgs[pickup.getItemType()], x, y, iconSize, iconSize, null);
@@ -346,5 +351,58 @@ public class ObjectManager {
 
 	public void clearProjectiles() {
 		projectiles.clear();
+	}
+
+	public String getPotionActiveState() {
+		StringBuilder builder = new StringBuilder();
+		for (Potion potion : potions) {
+			if (builder.length() > 0)
+				builder.append(',');
+			builder.append(potion.isActive() ? 1 : 0);
+		}
+		return builder.toString();
+	}
+
+	public String getContainerActiveState() {
+		StringBuilder builder = new StringBuilder();
+		for (GameContainer container : containers) {
+			if (builder.length() > 0)
+				builder.append(',');
+			builder.append(container.isActive() && !container.doAnimation ? 1 : 0);
+		}
+		return builder.toString();
+	}
+
+	public void restoreSessionState(String potionActiveState, String containerActiveState, Point respawnPoint) {
+		restorePotionState(potionActiveState);
+		restoreContainerState(containerActiveState);
+		restoreCheckpointState(respawnPoint);
+		projectiles.clear();
+		inventoryPickups.clear();
+	}
+
+	private void restorePotionState(String state) {
+		String[] values = splitState(state);
+		for (int i = 0; i < potions.size() && i < values.length; i++)
+			potions.get(i).setActive(!"0".equals(values[i]));
+	}
+
+	private void restoreContainerState(String state) {
+		String[] values = splitState(state);
+		for (int i = 0; i < containers.size() && i < values.length; i++)
+			containers.get(i).setActive(!"0".equals(values[i]));
+	}
+
+	private void restoreCheckpointState(Point respawnPoint) {
+		if (respawnPoint == null)
+			return;
+
+		for (Checkpoint checkpoint : currentLevel.getCheckpoints())
+			if (checkpoint.getRespawnPoint().equals(respawnPoint))
+				checkpoint.restoreActivated();
+	}
+
+	private String[] splitState(String value) {
+		return value == null || value.isBlank() ? new String[0] : value.split(",");
 	}
 }

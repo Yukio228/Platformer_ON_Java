@@ -47,9 +47,11 @@ public class Game implements Runnable {
 	}
 
 	private void initClasses() {
-		audioOptions = new AudioOptions(this);
-		audioPlayer = new AudioPlayer();
 		saveManager = new SaveManager();
+		audioPlayer = new AudioPlayer();
+		audioOptions = new AudioOptions(this);
+		audioOptions.applySavedSettings();
+		audioPlayer.playSong(AudioPlayer.MENU_1);
 		playing = new Playing(this);
 		saveManager.ensureProgress(playing.getLevelManager().getAmountOfLevels());
 		playing.getPlayer().setSkin(saveManager.getPlayerSkin());
