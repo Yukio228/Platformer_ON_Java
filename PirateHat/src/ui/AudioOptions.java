@@ -52,13 +52,23 @@ public class AudioOptions {
 		volumeButton.draw(g);
 	}
 
+	public void applySavedSettings() {
+		float volume = game.getSaveManager().getAudioVolume();
+		boolean musicMuted = game.getSaveManager().isMusicMuted();
+		boolean sfxMuted = game.getSaveManager().isSfxMuted();
+
+		volumeButton.setFloatValue(volume);
+		musicButton.setMuted(musicMuted);
+		sfxButton.setMuted(sfxMuted);
+
+		game.getAudioPlayer().setVolume(volume);
+		game.getAudioPlayer().setSongMute(musicMuted);
+		game.getAudioPlayer().setEffectMute(sfxMuted);
+	}
+
 	public void mouseDragged(MouseEvent e) {
 		if (volumeButton.isMousePressed()) {
-			float valueBefore = volumeButton.getFloatValue();
-			volumeButton.changeX(e.getX());
-			float valueAfter = volumeButton.getFloatValue();
-			if (valueBefore != valueAfter)
-				game.getAudioPlayer().setVolume(valueAfter);
+			applyVolumeAt(e.getX());
 		}
 	}
 
@@ -67,23 +77,31 @@ public class AudioOptions {
 			musicButton.setMousePressed(true);
 		else if (isIn(e, sfxButton))
 			sfxButton.setMousePressed(true);
-		else if (isIn(e, volumeButton))
+		else if (isInVolumeSlider(e)) {
 			volumeButton.setMousePressed(true);
+			applyVolumeAt(e.getX());
+		}
 	}
 
 	public void mouseReleased(MouseEvent e) {
+		boolean settingsChanged = false;
 		if (isIn(e, musicButton)) {
 			if (musicButton.isMousePressed()) {
 				musicButton.setMuted(!musicButton.isMuted());
 				game.getAudioPlayer().toggleSongMute();
+				settingsChanged = true;
 			}
 
 		} else if (isIn(e, sfxButton)) {
 			if (sfxButton.isMousePressed()) {
 				sfxButton.setMuted(!sfxButton.isMuted());
 				game.getAudioPlayer().toggleEffectMute();
+				settingsChanged = true;
 			}
 		}
+
+		if (settingsChanged)
+			saveAudioSettings();
 
 		musicButton.resetBools();
 		sfxButton.resetBools();
@@ -101,12 +119,30 @@ public class AudioOptions {
 			musicButton.setMouseOver(true);
 		else if (isIn(e, sfxButton))
 			sfxButton.setMouseOver(true);
-		else if (isIn(e, volumeButton))
+		else if (isInVolumeSlider(e))
 			volumeButton.setMouseOver(true);
 	}
 
 	private boolean isIn(MouseEvent e, PauseButton b) {
 		return b.getBounds().contains(e.getX(), e.getY());
+	}
+
+	private boolean isInVolumeSlider(MouseEvent e) {
+		return volumeButton.isInSlider(e.getX(), e.getY()) || isIn(e, volumeButton);
+	}
+
+	private void applyVolumeAt(int mouseX) {
+		float valueBefore = volumeButton.getFloatValue();
+		volumeButton.changeX(mouseX);
+		float valueAfter = volumeButton.getFloatValue();
+		if (Math.abs(valueBefore - valueAfter) > 0.001f) {
+			game.getAudioPlayer().setVolume(valueAfter);
+			saveAudioSettings();
+		}
+	}
+
+	private void saveAudioSettings() {
+		game.getSaveManager().saveAudioSettings(volumeButton.getFloatValue(), musicButton.isMuted(), sfxButton.isMuted());
 	}
 
 }

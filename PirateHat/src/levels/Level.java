@@ -21,6 +21,7 @@ import objects.GameContainer;
 import objects.Grass;
 import objects.Potion;
 import objects.Spike;
+import tutorial.TutorialLevelConfig;
 
 import static utilz.Constants.EnemyConstants.*;
 import static utilz.Constants.ObjectConstants.*;
@@ -78,6 +79,58 @@ public class Level {
 				loadEntities(green, x, y);
 				loadObjects(blue, x, y);
 			}
+
+		applyTutorialLevelConfig();
+	}
+
+	private void applyTutorialLevelConfig() {
+		if (!TutorialLevelConfig.isTutorialLevel(levelIndex))
+			return;
+
+		if (playerSpawn == null)
+			playerSpawn = tilePoint(TutorialLevelConfig.PLAYER_SPAWN_TILE);
+
+		for (Point crabTile : TutorialLevelConfig.CRAB_TILES)
+			if (!hasEnemyAtTile(crabTile))
+				crabs.add(new Crabby(crabTile.x * Game.TILES_SIZE, crabTile.y * Game.TILES_SIZE));
+
+		for (TutorialLevelConfig.ObjectTile objectTile : TutorialLevelConfig.OBJECT_TILES)
+			if (!hasContainerAtTile(objectTile))
+				containers.add(new GameContainer(objectTile.x() * Game.TILES_SIZE, objectTile.y() * Game.TILES_SIZE, objectTile.type()));
+
+		for (TutorialLevelConfig.ObjectTile treeTile : TutorialLevelConfig.TREE_TILES)
+			if (!hasTreeAtTile(treeTile))
+				trees.add(new BackgroundTree(treeTile.x() * Game.TILES_SIZE, treeTile.y() * Game.TILES_SIZE, treeTile.type()));
+	}
+
+	private Point tilePoint(Point tile) {
+		return new Point(tile.x * Game.TILES_SIZE, tile.y * Game.TILES_SIZE);
+	}
+
+	private boolean hasEnemyAtTile(Point tile) {
+		int tileX = tile.x * Game.TILES_SIZE;
+		int tileY = tile.y * Game.TILES_SIZE;
+		return crabs.stream().anyMatch(c -> isAtTile(c.getHitbox().x, c.getHitbox().y, tileX, tileY))
+				|| pinkstars.stream().anyMatch(p -> isAtTile(p.getHitbox().x, p.getHitbox().y, tileX, tileY))
+				|| sharks.stream().anyMatch(s -> isAtTile(s.getHitbox().x, s.getHitbox().y, tileX, tileY))
+				|| bosses.stream().anyMatch(b -> isAtTile(b.getHitbox().x, b.getHitbox().y, tileX, tileY))
+				|| pirateMobs.stream().anyMatch(p -> isAtTile(p.getHitbox().x, p.getHitbox().y, tileX, tileY));
+	}
+
+	private boolean hasContainerAtTile(TutorialLevelConfig.ObjectTile tile) {
+		int tileX = tile.x() * Game.TILES_SIZE;
+		int tileY = tile.y() * Game.TILES_SIZE;
+		return containers.stream().anyMatch(c -> c.getObjType() == tile.type() && isAtTile(c.getHitbox().x, c.getHitbox().y, tileX, tileY));
+	}
+
+	private boolean hasTreeAtTile(TutorialLevelConfig.ObjectTile tile) {
+		int tileX = tile.x() * Game.TILES_SIZE;
+		int tileY = tile.y() * Game.TILES_SIZE;
+		return trees.stream().anyMatch(t -> t.getType() == tile.type() && t.getX() == tileX && t.getY() == tileY);
+	}
+
+	private boolean isAtTile(float worldX, float worldY, int tileX, int tileY) {
+		return Math.abs(worldX - tileX) < Game.TILES_SIZE && Math.abs(worldY - tileY) < Game.TILES_SIZE;
 	}
 
 	private void loadLevelData(int redValue, int x, int y) {
@@ -136,17 +189,17 @@ public class Level {
 	}
 
 	private boolean addManualCheckpoints() {
-		if (levelIndex == 1) {
+		if (levelIndex == 2) {
 			addCheckpointAtTile(37, 7);
 			return true;
 		}
 
-		if (levelIndex == 2) {
+		if (levelIndex == 3) {
 			addCheckpointAtTile(50, 6);
 			return true;
 		}
 
-		if (levelIndex == 4) {
+		if (levelIndex == 5) {
 			addCheckpointAtTile(26, 7);
 			return true;
 		}

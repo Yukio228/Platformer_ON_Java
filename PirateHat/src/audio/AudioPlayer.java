@@ -38,7 +38,6 @@ public class AudioPlayer {
 	public AudioPlayer() {
 		loadSongs();
 		loadEffects();
-		playSong(MENU_1);
 	}
 
 	private void loadSongs() {
@@ -100,9 +99,13 @@ public class AudioPlayer {
 	}
 
 	public void setVolume(float volume) {
-		this.volume = volume;
+		this.volume = Math.max(0f, Math.min(1f, volume));
 		updateSongVolume();
 		updateEffectsVolume();
+	}
+
+	public float getVolume() {
+		return volume;
 	}
 
 	public void stopSong() {
@@ -112,7 +115,8 @@ public class AudioPlayer {
 	}
 
 	public void setLevelSong(int lvlIndex) {
-		if (lvlIndex % 2 == 0)
+		int songLevelIndex = Math.max(0, lvlIndex - 1);
+		if (songLevelIndex % 2 == 0)
 			playSong(LEVEL_1);
 		else
 			playSong(LEVEL_2);
@@ -151,17 +155,33 @@ public class AudioPlayer {
 	}
 
 	public void toggleSongMute() {
-		this.songMute = !songMute;
+		setSongMute(!songMute);
+	}
+
+	public void setSongMute(boolean songMute) {
+		this.songMute = songMute;
 		for (Clip c : songs)
 			setClipMute(c, songMute);
 	}
 
 	public void toggleEffectMute() {
-		this.effectMute = !effectMute;
-		for (Clip c : effects)
-			setClipMute(c, effectMute);
+		setEffectMute(!effectMute);
 		if (!effectMute)
 			playEffect(JUMP);
+	}
+
+	public void setEffectMute(boolean effectMute) {
+		this.effectMute = effectMute;
+		for (Clip c : effects)
+			setClipMute(c, effectMute);
+	}
+
+	public boolean isSongMuted() {
+		return songMute;
+	}
+
+	public boolean isEffectMuted() {
+		return effectMute;
 	}
 
 	private void updateSongVolume() {
@@ -190,9 +210,16 @@ public class AudioPlayer {
 		if (clip == null || !clip.isControlSupported(FloatControl.Type.MASTER_GAIN))
 			return;
 		FloatControl gainControl = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
-		float range = gainControl.getMaximum() - gainControl.getMinimum();
-		float gain = (range * volume) + gainControl.getMinimum();
-		gainControl.setValue(gain);
+		gainControl.setValue(getGainForVolume(gainControl));
+	}
+
+	private float getGainForVolume(FloatControl gainControl) {
+		if (volume <= 0f)
+			return gainControl.getMinimum();
+
+		float targetGain = (float) (20f * Math.log10(volume));
+		float maxGain = Math.min(0f, gainControl.getMaximum());
+		return Math.max(gainControl.getMinimum(), Math.min(maxGain, targetGain));
 	}
 
 }

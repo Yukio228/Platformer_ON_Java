@@ -28,13 +28,22 @@ repository as a source asset library for future development.
 ## Run In IntelliJ IDEA
 
 1. Open the repository root in IntelliJ IDEA.
-2. Configure a Java SDK for the project.
-3. Mark `PirateHat/src/` as Sources Root if IntelliJ does not detect it
-   automatically.
-4. Mark `PirateHat/res/` as Resources Root if resource loading needs it.
-5. Run `main.MainClass`.
+2. Import the Maven project if IntelliJ prompts for it.
+3. Configure a Java 21 SDK for the project.
+4. Run `main.MainClass`.
 
 The project does not require external libraries for compilation.
+
+## Build Windows EXE
+
+Run this from the repository root:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\build-exe.ps1
+```
+
+The fresh portable build is created at `dist/portable/PirateHat/PirateHat.exe`.
+The zipped package is created at `dist/PirateHat-portable.zip`.
 
 ## Controls
 

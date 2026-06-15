@@ -1,6 +1,7 @@
 package ui;
 
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 import utilz.LoadSave;
@@ -13,6 +14,7 @@ public class VolumeButton extends PauseButton {
 	private int index = 0;
 	private boolean mouseOver, mousePressed;
 	private int buttonX, minX, maxX;
+	private Rectangle sliderBounds;
 	private float floatValue = 0f;
 
 	public VolumeButton(int x, int y, int width, int height) {
@@ -23,6 +25,8 @@ public class VolumeButton extends PauseButton {
 		this.width = width;
 		minX = x + VOLUME_WIDTH / 2;
 		maxX = x + width - VOLUME_WIDTH / 2;
+		sliderBounds = new Rectangle(x, y, width, height);
+		updateFloatValue();
 		loadImgs();
 	}
 
@@ -67,7 +71,7 @@ public class VolumeButton extends PauseButton {
 	private void updateFloatValue() {
 		float range = maxX - minX;
 		float value = buttonX - minX;
-		floatValue = value / range;
+		floatValue = range <= 0 ? 0f : value / range;
 	}
 
 	public void resetBools() {
@@ -93,5 +97,16 @@ public class VolumeButton extends PauseButton {
 
 	public float getFloatValue() {
 		return floatValue;
+	}
+
+	public void setFloatValue(float value) {
+		float clampedValue = Math.max(0f, Math.min(1f, value));
+		buttonX = minX + Math.round((maxX - minX) * clampedValue);
+		updateFloatValue();
+		bounds.x = buttonX - VOLUME_WIDTH / 2;
+	}
+
+	public boolean isInSlider(int mouseX, int mouseY) {
+		return sliderBounds.contains(mouseX, mouseY);
 	}
 }

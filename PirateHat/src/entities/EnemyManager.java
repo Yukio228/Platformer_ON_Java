@@ -297,6 +297,70 @@ public class EnemyManager {
 		return enemies;
 	}
 
+	public String getEnemyActiveState() {
+		StringBuilder builder = new StringBuilder();
+		for (Enemy enemy : getAllEnemies()) {
+			if (builder.length() > 0)
+				builder.append(',');
+			builder.append(enemy.isActive() ? 1 : 0);
+		}
+		return builder.toString();
+	}
+
+	public String getEnemyHealthState() {
+		StringBuilder builder = new StringBuilder();
+		for (Enemy enemy : getAllEnemies()) {
+			if (builder.length() > 0)
+				builder.append(',');
+			builder.append(Math.max(0, enemy.getCurrentHealth()));
+		}
+		return builder.toString();
+	}
+
+	public void restoreEnemyState(String activeState, String healthState) {
+		List<Enemy> enemies = getAllEnemies();
+		String[] activeValues = splitState(activeState);
+		String[] healthValues = splitState(healthState);
+
+		for (int i = 0; i < enemies.size(); i++) {
+			Enemy enemy = enemies.get(i);
+			boolean active = i >= activeValues.length || !"0".equals(activeValues[i]);
+			int health = i < healthValues.length ? parseInt(healthValues[i], enemy.getMaxHealth()) : enemy.getMaxHealth();
+
+			enemy.active = active && health > 0;
+			enemy.currentHealth = Math.max(0, Math.min(enemy.getMaxHealth(), health));
+			enemy.firstUpdate = true;
+			enemy.attackChecked = false;
+			enemy.alertCooldownTick = 0;
+			enemy.airSpeed = 0;
+			enemy.inAir = false;
+			enemy.pushDrawOffset = 0;
+			if (enemy.aiController != null)
+				enemy.aiController.reset();
+			enemy.newState(enemy.active ? IDLE : DEAD);
+		}
+	}
+
+	public void resetAllEnemyAiState() {
+		for (Enemy enemy : getAllEnemies()) {
+			enemy.alertCooldownTick = 0;
+			if (enemy.aiController != null)
+				enemy.aiController.reset();
+		}
+	}
+
+	private String[] splitState(String value) {
+		return value == null || value.isBlank() ? new String[0] : value.split(",");
+	}
+
+	private int parseInt(String value, int fallback) {
+		try {
+			return value == null ? fallback : Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			return fallback;
+		}
+	}
+
 	public int countAlliesNear(Enemy source, float radius) {
 		int count = 0;
 		float radiusSq = radius * radius;

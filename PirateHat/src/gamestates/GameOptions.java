@@ -118,7 +118,8 @@ public class GameOptions extends State implements Statemethods {
 	}
 
 	private void drawResolutionSelector(Graphics g) {
-		drawSelectorButton(g, resolutionSelectBounds, game.getGameWindow().getResolutionLabel(), resolutionDropdownOpen, resolutionSelectMouseOver || resolutionSelectMousePressed);
+		boolean disabled = !game.getGameWindow().canChangeResolutionInCurrentMode();
+		drawSelectorButton(g, resolutionSelectBounds, game.getGameWindow().getResolutionLabel(), resolutionDropdownOpen, !disabled && (resolutionSelectMouseOver || resolutionSelectMousePressed), disabled);
 	}
 
 	private void drawResolutionList(Graphics g) {
@@ -192,10 +193,15 @@ public class GameOptions extends State implements Statemethods {
 	}
 
 	private void drawSelectorButton(Graphics g, Rectangle button, String text, boolean open, boolean hover) {
+		drawSelectorButton(g, button, text, open, hover, false);
+	}
+
+	private void drawSelectorButton(Graphics g, Rectangle button, String text, boolean open, boolean hover, boolean disabled) {
 		int s = (int) Game.SCALE;
-		drawPixelPanel(g, button, hover || open);
+		drawPixelPanel(g, button, !disabled && (hover || open));
 		AssetText.draw(g, text, button.x + 8 * s, button.y + 6 * s, 2);
-		drawDropdownArrow(g, button.x + button.width - 14 * s, button.y + 9 * s, s, open);
+		if (!disabled)
+			drawDropdownArrow(g, button.x + button.width - 14 * s, button.y + 9 * s, s, open);
 	}
 
 	private void drawDropdownArrow(Graphics g, int x, int y, int s, boolean open) {
@@ -251,7 +257,7 @@ public class GameOptions extends State implements Statemethods {
 			return;
 		else if (screenSelectBounds.contains(e.getPoint()))
 			screenSelectMousePressed = true;
-		else if (resolutionSelectBounds.contains(e.getPoint()))
+		else if (game.getGameWindow().canChangeResolutionInCurrentMode() && resolutionSelectBounds.contains(e.getPoint()))
 			resolutionSelectMousePressed = true;
 		else if (isIn(e, menuB)) {
 			menuB.setMousePressed(true);
@@ -279,10 +285,12 @@ public class GameOptions extends State implements Statemethods {
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
+		audioOptions.mouseReleased(e);
+
 		if (screenSelectMousePressed && screenSelectBounds.contains(e.getPoint())) {
 			screenDropdownOpen = !screenDropdownOpen;
 			resolutionDropdownOpen = false;
-		} else if (resolutionSelectMousePressed && resolutionSelectBounds.contains(e.getPoint())) {
+		} else if (resolutionSelectMousePressed && resolutionSelectBounds.contains(e.getPoint()) && game.getGameWindow().canChangeResolutionInCurrentMode()) {
 			resolutionDropdownOpen = !resolutionDropdownOpen;
 			screenDropdownOpen = false;
 		} else if (releaseScreenModeButton(e))
@@ -292,8 +300,7 @@ public class GameOptions extends State implements Statemethods {
 		else if (isIn(e, menuB)) {
 			if (menuB.isMousePressed())
 				Gamestate.state = Gamestate.MENU;
-		} else
-			audioOptions.mouseReleased(e);
+		}
 
 		if (!screenSelectBounds.contains(e.getPoint()) && !resolutionSelectBounds.contains(e.getPoint())) {
 			screenDropdownOpen = false;
@@ -347,7 +354,7 @@ public class GameOptions extends State implements Statemethods {
 
 		if (screenSelectBounds.contains(e.getPoint()))
 			screenSelectMouseOver = true;
-		else if (resolutionSelectBounds.contains(e.getPoint()))
+		else if (game.getGameWindow().canChangeResolutionInCurrentMode() && resolutionSelectBounds.contains(e.getPoint()))
 			resolutionSelectMouseOver = true;
 		else if (screenDropdownOpen && updateScreenModeMouseOver(e))
 			return;

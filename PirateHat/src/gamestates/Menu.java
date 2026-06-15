@@ -33,17 +33,15 @@ public class Menu extends State implements Statemethods {
 	}
 
 	private void loadButtons() {
-		int centerX = Game.GAME_WIDTH / 2;
-		int topPadding = (int) (104 * Game.SCALE);
-		int bottomPadding = (int) (32 * Game.SCALE);
-		int availableH = menuHeight - topPadding - bottomPadding;
-		int buttonGap = (availableH - buttons.length * B_HEIGHT) / (buttons.length - 1);
-		int startY = menuY + topPadding;
+		int buttonX = menuX + menuWidth / 2;
+		int contentTop = menuY + (int) (112 * Game.SCALE);
+		int contentBottom = menuY + menuHeight - (int) (31 * Game.SCALE);
+		int buttonGap = (contentBottom - contentTop - buttons.length * B_HEIGHT) / (buttons.length - 1);
 
-		buttons[0] = new MenuButton(centerX, startY, 0, Gamestate.PLAYING);
-		buttons[1] = new MenuButton(centerX, startY + B_HEIGHT + buttonGap, 1, Gamestate.OPTIONS);
-		buttons[2] = new MenuButton(centerX, startY + 2 * (B_HEIGHT + buttonGap), 2, Gamestate.QUIT);
-		buttons[3] = new MenuButton(centerX, startY + 3 * (B_HEIGHT + buttonGap), 3, Gamestate.WARDROBE);
+		buttons[0] = new MenuButton(buttonX, contentTop, 0, Gamestate.PLAYING);
+		buttons[1] = new MenuButton(buttonX, contentTop + (B_HEIGHT + buttonGap), 1, Gamestate.OPTIONS);
+		buttons[2] = new MenuButton(buttonX, contentTop + (B_HEIGHT + buttonGap) * 2, 3, Gamestate.WARDROBE);
+		buttons[3] = new MenuButton(buttonX, contentTop + (B_HEIGHT + buttonGap) * 3, 2, Gamestate.QUIT);
 	}
 
 	@Override
@@ -75,9 +73,10 @@ public class Menu extends State implements Statemethods {
 		for (MenuButton mb : buttons) {
 			if (isIn(e, mb)) {
 				if (mb.isMousePressed()) {
-					if (mb.getState() == Gamestate.PLAYING)
+					if (mb.getState() == Gamestate.PLAYING) {
+						game.getPlaying().loadSavedSession();
 						setGamestate(Gamestate.PLAYING);
-					else
+					} else
 						mb.applyGamestate();
 				}
 				break;

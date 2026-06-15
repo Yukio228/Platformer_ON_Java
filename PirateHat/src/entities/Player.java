@@ -100,6 +100,10 @@ public class Player extends Entity {
 		this.y = spawn.y;
 	}
 
+	public Point getRespawnPoint() {
+		return new Point((int) x, (int) y);
+	}
+
 	private void initAttackBox() {
 		attackBox = new Rectangle2D.Float(x, y, (int) (35 * Game.SCALE), (int) (20 * Game.SCALE));
 		resetAttackBox();
@@ -421,6 +425,7 @@ public class Player extends Entity {
 		inAir = true;
 		airSpeed = jumpSpeed;
 		applyJumpCooldownOnLanding = true;
+		playing.recordTutorialJump();
 	}
 
 	private void resetInAir() {
@@ -512,6 +517,55 @@ public class Player extends Entity {
 	public void changePower(int value) {
 		powerValue += value;
 		powerValue = Math.max(Math.min(powerValue, powerMaxValue), 0);
+	}
+
+	public int getCurrentHealth() {
+		return currentHealth;
+	}
+
+	public int getMaxHealth() {
+		return maxHealth;
+	}
+
+	public int getPowerValue() {
+		return powerValue;
+	}
+
+	public int getWorldX() {
+		return (int) hitbox.x;
+	}
+
+	public int getWorldY() {
+		return (int) hitbox.y;
+	}
+
+	public void restoreSession(int playerX, int playerY, int respawnX, int respawnY, int health, int power, int[] inventoryCounts) {
+		resetDirBooleans();
+		inAir = false;
+		attacking = false;
+		moving = false;
+		airSpeed = 0f;
+		state = IDLE;
+		deathRecorded = false;
+		powerAttackActive = false;
+		powerAttackTick = 0;
+		movementNoiseCooldown = 0;
+		attackNoiseCooldown = 0;
+		attackCooldownTick = 0;
+		jumpCooldownTick = 0;
+		applyJumpCooldownOnLanding = false;
+
+		x = respawnX;
+		y = respawnY;
+		hitbox.x = playerX;
+		hitbox.y = playerY;
+		currentHealth = Math.max(1, Math.min(maxHealth, health));
+		powerValue = Math.max(0, Math.min(powerMaxValue, power));
+		inventory.setCounts(inventoryCounts);
+		resetAttackBox();
+
+		if (!IsEntityOnFloor(hitbox, lvlData))
+			inAir = true;
 	}
 
 	private void loadAnimations() {
@@ -607,17 +661,19 @@ public class Player extends Entity {
 		return tileY;
 	}
 
-	public void powerAttack() {
+	public boolean powerAttack() {
 		if (powerAttackActive || attacking || attackCooldownTick > 0)
-			return;
+			return false;
 		if (powerValue >= 60) {
 			powerAttackActive = true;
 			attackChecked = false;
 			attackCooldownTick = POWER_ATTACK_COOLDOWN_TICKS;
 			changePower(-60);
 			playing.emitPlayerNoise(NoiseType.POWER_ATTACK, getCenterX(), getCenterY());
+			return true;
 		}
 
+		return false;
 	}
 
 	private void emitMovementNoise() {
